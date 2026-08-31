@@ -4,6 +4,14 @@ import type { Logger } from '../logger';
 import { defineReadonlyProperty } from '../utils/define-readonly-property';
 
 export default function forceEnable4K(logger: Logger): ModuleMeta {
+  // 必须在 return 之前初始化：hook 闭包引用它，放 return 之后会因 TDZ 永不初始化，
+  // 运行期抛 ReferenceError（2026-08-31 审查 Critical #1 修复）
+  const OUR_KEYS = new Set([
+    'bilibili_player_force_DolbyAtmos&8K&HDR',
+    'bilibili_player_force_hdr',
+    'bilibili_player_force_8k'
+  ]);
+
   return {
     name: 'force-enable-4k',
     description: '强制启用 4K 播放 / 解锁 HDR / Dolby Atmos',
@@ -11,12 +19,6 @@ export default function forceEnable4K(logger: Logger): ModuleMeta {
     onBangumi: hook,
     onLive: hook
   };
-
-  const OUR_KEYS = new Set([
-    'bilibili_player_force_DolbyAtmos&8K&HDR',
-    'bilibili_player_force_hdr',
-    'bilibili_player_force_8k'
-  ]);
 
   function hook({ onlyCallOnce }: MakeBilibiliGreatTogetherHook) {
     const keysToDelete: string[] = [];
