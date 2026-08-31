@@ -4,8 +4,8 @@ import type { Logger } from '../logger';
 import { tagged as css } from 'foxts/tagged';
 import { onLoaded } from '../utils/on-load-event';
 
-// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(logger: Logger): ModuleMeta
-export default function optimizeStory(logger: Logger): ModuleMeta {
+// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(_logger: Logger): ModuleMeta
+export default function optimizeStory(_logger: Logger): ModuleMeta {
   return {
     name: 'optimize-story',
     description: '动态页面优化',

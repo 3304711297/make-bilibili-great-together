@@ -17,8 +17,8 @@ declare global {
 // 上游模块文件自带 `declare const unsafeWindow: typeof globalThis & Window;`，
 // core 内统一由 src/globals.d.ts 声明，此处不再重复
 
-// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(logger: Logger): ModuleMeta
-export default function noAd(logger: Logger): ModuleMeta {
+// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(_logger: Logger): ModuleMeta
+export default function noAd(_logger: Logger): ModuleMeta {
   return {
     name: 'no-ad',
     description: '防止叔叔通过广告给自己赚棺材钱',

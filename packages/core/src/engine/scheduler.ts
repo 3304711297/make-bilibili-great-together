@@ -15,7 +15,7 @@ export interface CoreInstance {
   onUnload(): void;
 }
 
-function buildHook(sets: HookSets, styles: string[], logger: Logger): MakeBilibiliGreatTogetherHook {
+function buildHook(sets: HookSets, styles: string[], _logger: Logger): MakeBilibiliGreatTogetherHook {
   const fnWs = new WeakSet<() => void>();
   return {
     addStyle(style) { styles.push(style); },

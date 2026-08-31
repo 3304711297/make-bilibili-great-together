@@ -93,7 +93,7 @@ export default function noP2P(logger: Logger): ModuleMeta {
           ...HTMLMediaElementPrototypeSrcDescriptor,
           set(value: string) {
             if (typeof value !== 'string') {
-              // eslint-disable-next-line sukka/unicorn/no-useless-coercion -- fuck typescript-eslint about never
+              // 上游 lint 指令（本仓库未启用该规则）：sukka/unicorn/no-useless-coercion -- fuck typescript-eslint about never
               value = String(value);
             }
 

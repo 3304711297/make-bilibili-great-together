@@ -11,8 +11,8 @@ const noopNeverResolvedPromise = () => neverResolvedPromise;
 // based on uBlock Origin's no-webrtc
 // https://github.com/gorhill/uBlock/blob/6c228a8bfdcfc14140cdd3967270df28598c1aaf/src/js/resources/scriptlets.js#L2216
 
-// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(logger: Logger): ModuleMeta
-export default function noWebRTC(logger: Logger): ModuleMeta {
+// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(_logger: Logger): ModuleMeta
+export default function noWebRTC(_logger: Logger): ModuleMeta {
   return {
     name: 'no-webrtc',
     description: '通过禁用 WebRTC 防止叔叔省下棺材钱',
@@ -59,11 +59,11 @@ export default function noWebRTC(logger: Logger): ModuleMeta {
           this.prototype.addEventListener = noop;
           this.prototype.removeEventListener = noop;
           this.prototype.onbufferedamountlow = noop;
-          // eslint-disable-next-line sukka/unicorn/prefer-add-event-listener -- mock
+          // 上游 lint 指令（本仓库未启用该规则）：sukka/unicorn/prefer-add-event-listener -- mock
           this.prototype.onclose = noop;
-          // eslint-disable-next-line sukka/unicorn/prefer-add-event-listener -- mock
+          // 上游 lint 指令（本仓库未启用该规则）：sukka/unicorn/prefer-add-event-listener -- mock
           this.prototype.onerror = noop;
-          // eslint-disable-next-line sukka/unicorn/prefer-add-event-listener -- mock
+          // 上游 lint 指令（本仓库未启用该规则）：sukka/unicorn/prefer-add-event-listener -- mock
           this.prototype.onmessage = noop;
         }
 

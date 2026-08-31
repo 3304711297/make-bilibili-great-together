@@ -11,8 +11,8 @@ declare global {
   }
 }
 
-// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(logger: Logger): ModuleMeta
-export default function fixCopyInCV(logger: Logger): ModuleMeta {
+// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(_logger: Logger): ModuleMeta
+export default function fixCopyInCV(_logger: Logger): ModuleMeta {
   return {
     name: 'fix-copy-in-cv',
     description: '修复文章复制功能',

@@ -3,8 +3,8 @@ import type { ModuleMeta } from '../types';
 import type { Logger } from '../logger';
 import { tagged as css } from 'foxts/tagged';
 
-// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(logger: Logger): ModuleMeta
-export default function playerVideoFit(logger: Logger): ModuleMeta {
+// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(_logger: Logger): ModuleMeta
+export default function playerVideoFit(_logger: Logger): ModuleMeta {
   return {
     name: 'player-video-fit',
     description: '播放器视频裁切模式',
