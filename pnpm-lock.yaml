@@ -19,6 +19,13 @@ importers:
         version: 2.1.9(@types/node@20.19.43)
 
   packages/core:
+    dependencies:
+      flru:
+        specifier: ^1.0.2
+        version: 1.0.2
+      foxts:
+        specifier: ^5.9.1
+        version: 5.9.1
     devDependencies:
       vitest:
         specifier: ^2.0.0
@@ -390,6 +397,21 @@ packages:
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
+
+  fast-fnv1a@1.0.0:
+    resolution: {integrity: sha512-Y7iaFmz24pNJX+nqXgDuyHYFTfV9XPWJRfqp0hlG0Xuz1vKnelwLwvmKkbvVVvp5WzYWnrovBTLdk2PWkOYzCg==}
+    engines: {node: ^22.15.0 || ^23.8.0 || >=24.0.0}
+
+  flru@1.0.2:
+    resolution: {integrity: sha512-kWyh8ADvHBFz6ua5xYOPnUroZTT/bwWfrCeL0Wj1dzG4/YOmOcfJ99W8dOVyyynJN35rZ9aCOtHChqQovV7yog==}
+    engines: {node: '>=6'}
+
+  fnv1a52@1.0.0:
+    resolution: {integrity: sha512-dUnV6Uok578HuGYTC/EM0LqeXewXBCHsh/kmLkdcqN1zgSy7K3gCIrshPBS5JwW20XSaRv4Vnz7z8lMjOV8jWw==}
+    engines: {node: '>=18.0.0'}
+
+  foxts@5.9.1:
+    resolution: {integrity: sha512-NrIHGlf4LZGTjjGlVi3gmMbtvC4871SFUflu9yb8X91FYppAk+WMiYS6ZlaEgkPqAkgIGNeq+Y5YCL80GL6v8g==}
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -784,6 +806,17 @@ snapshots:
       '@types/estree': 1.0.9
 
   expect-type@1.4.0: {}
+
+  fast-fnv1a@1.0.0: {}
+
+  flru@1.0.2: {}
+
+  fnv1a52@1.0.0: {}
+
+  foxts@5.9.1:
+    dependencies:
+      fast-fnv1a: 1.0.0
+      fnv1a52: 1.0.0
 
   fsevents@2.3.3:
     optional: true
