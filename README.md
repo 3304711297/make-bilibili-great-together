@@ -8,7 +8,9 @@ B 站反跟踪、反 PCDN/P2P、播放链路增强，**双形态**（userscript 
 
 ## 安装（userscript）
 
-GitHub Releases 直链（发版后可用）或 jsDelivr：`https://cdn.jsdelivr.net/gh/<owner>/make-bilibili-great-together@<tag>/packages/userscript/dist/make-bilibili-great-together.user.js`
+GitHub Releases 直链（发版后可用）或 jsDelivr：`https://cdn.jsdelivr.net/gh/3304711297/make-bilibili-great-together@<tag>/packages/userscript/dist/make-bilibili-great-together.user.js`
+
+> 发版前获取方式：Releases 尚无产物时，请 clone 本仓库后本地构建：`pnpm install && pnpm build`，产物在 `packages/userscript/dist/`。
 
 ## 与扩展共存
 
