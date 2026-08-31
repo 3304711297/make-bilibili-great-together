@@ -20,6 +20,9 @@ importers:
 
   packages/core:
     dependencies:
+      fake-indexeddb:
+        specifier: ^6.2.5
+        version: 6.2.5
       flru:
         specifier: ^1.0.2
         version: 1.0.2
@@ -397,6 +400,10 @@ packages:
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
+
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
+    engines: {node: '>=18'}
 
   fast-fnv1a@1.0.0:
     resolution: {integrity: sha512-Y7iaFmz24pNJX+nqXgDuyHYFTfV9XPWJRfqp0hlG0Xuz1vKnelwLwvmKkbvVVvp5WzYWnrovBTLdk2PWkOYzCg==}
@@ -806,6 +813,8 @@ snapshots:
       '@types/estree': 1.0.9
 
   expect-type@1.4.0: {}
+
+  fake-indexeddb@6.2.5: {}
 
   fast-fnv1a@1.0.0: {}
 
