@@ -1,0 +1,24 @@
+{
+  "name": "Make Bilibili Great Together",
+  "description": "接手 Make Bilibili Great Than Ever Before：反跟踪、反 PCDN/P2P、CDN 选优，与 BewlyCat/AveMujica 共存感知",
+  "namespace": "https://github.com/VOS-User/make-bilibili-great-together",
+  "run-at": "document-start",
+  "match": [
+    "https://www.bilibili.com/*",
+    "https://t.bilibili.com/*",
+    "https://live.bilibili.com/*",
+    "https://space.bilibili.com/*"
+  ],
+  "grant": [
+    "unsafeWindow",
+    "GM.registerMenuCommand",
+    "GM.unregisterMenuCommand",
+    "GM.getValue",
+    "GM.setValue",
+    "GM.deleteValue",
+    "GM.listValues",
+    "GM_xmlhttpRequest",
+    "GM.notification"
+  ],
+  "connect": ["bilivideo.com", "hdslb.com"]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@mbgt/userscript",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "test": "echo \"no unit tests in userscript package\" && exit 0",
+    "lint": "eslint src"
+  },
+  "dependencies": { "@mbgt/core": "workspace:*" },
+  "devDependencies": {
+    "rollup": "^4.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-replace": "^6.0.0",
+    "tslib": "^2.6.0",
+    "typescript": "^5.5.0"
+  }
+}
