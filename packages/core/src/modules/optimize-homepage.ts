@@ -3,8 +3,8 @@ import type { ModuleMeta } from '../types';
 import type { Logger } from '../logger';
 import { tagged as css } from 'foxts/tagged';
 
-// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(logger: Logger): ModuleMeta
-export default function optimizeHomepage(logger: Logger): ModuleMeta {
+// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(_logger: Logger): ModuleMeta
+export default function optimizeHomepage(_logger: Logger): ModuleMeta {
   return {
     name: 'optimize-homepage',
     description: '首页广告去除和样式优化',

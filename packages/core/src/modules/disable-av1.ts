@@ -18,7 +18,7 @@ export default function disableAV1(logger: Logger): ModuleMeta {
     description: '防止叔叔用 AV1 格式燃烧你的 CPU 并省下棺材钱',
     any({ onlyCallOnce }) {
       ((origCanPlayType) => {
-        // eslint-disable-next-line sukka/class-prototype -- override native method
+        // 上游 lint 指令（本仓库未启用该规则）：sukka/class-prototype -- override native method
         HTMLMediaElement.prototype.canPlayType = function (type) {
           if (type.includes('av01')) {
             onlyCallOnce(logAv1Disabled.HTMLVideoElement_canPlayType);

@@ -3,7 +3,6 @@ import { createCore } from '../src/engine/scheduler';
 import type { ModuleMeta } from '../src/types';
 
 function fakeWindow(): Window & typeof globalThis {
-  const noop = () => {};
   const fake = {
     fetch: vi.fn(async () => new Response('original')),
     console,

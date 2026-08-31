@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 // 以 Step 1 探明的实际导出为准，典型形态：
 import { isP2PCDNDomain } from '../src/utils/get-cdn-url';
 
