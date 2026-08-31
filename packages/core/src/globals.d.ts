@@ -10,8 +10,15 @@ declare const GM: {
   notification(text: string, title?: string): unknown;
   getValue<T = unknown>(key: string): Promise<T | undefined>;
   setValue(key: string, value: unknown): Promise<void>;
-  deleteValue(key: string): Promise<void>;
+  // 同步版 storage API：模块开关必须在 document-start 同步判定（Tampermonkey/ScriptCat/Violentmonkey 均提供）
+  GM_getValue(name: string): unknown | undefined;
+  GM_setValue(name: string, value: unknown): void;  deleteValue(key: string): Promise<void>;
   listValues(): Promise<string[]>;
-  registerMenuCommand(label: string, fn: () => void | Promise<void>, accessKeyOrOptions?: string | { autoClose?: boolean; caption?: string }): string;
+  // Violentmonkey 返回 number，Tampermonkey 返回 string
+  registerMenuCommand(label: string, fn: () => void | Promise<void>, accessKeyOrOptions?: string | { autoClose?: boolean; caption?: string }): string | number;
   unregisterMenuCommand(id: string): void;
-};
+}
+
+// 同步版 storage API 以独立全局形式注入沙箱（@grant GM_getValue / GM_setValue），非 GM 对象的成员
+declare function GM_getValue(name: string): unknown | undefined;
+declare function GM_setValue(name: string, value: unknown): void;;

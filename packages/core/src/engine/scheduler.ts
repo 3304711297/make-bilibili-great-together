@@ -32,24 +32,31 @@ function buildHook(sets: HookSets, styles: string[], _logger: Logger): MakeBilib
   };
 }
 
-function dispatchModules(modules: ModuleMeta[], hook: MakeBilibiliGreatTogetherHook, unsafeWindow: Window & typeof globalThis): void {
-  const { hostname, pathname } = unsafeWindow.location;
+function dispatchModules(modules: ModuleMeta[], hook: MakeBilibiliGreatTogetherHook, unsafeWindow: Window & typeof globalThis, logger: Logger): void {
+  const { hostname, pathname, href } = unsafeWindow.location;
+  // 逐模块逐钩子分发日志（对齐上游：`[name] "onVideo" <href>`；禁用模块的跳过日志由 entry 层负责）
+  const runHook = (mod: ModuleMeta, hookName: string, fn?: (h: MakeBilibiliGreatTogetherHook) => void) => {
+    if (!fn) return;
+    logger.log(`[${mod.name}] "${hookName}" ${href}`);
+    fn(hook);
+  };
   for (const mod of modules) {
-    if (mod.any) mod.any(hook);
+    if (mod.any) { runHook(mod, 'any', mod.any); }
     if (hostname === 'www.bilibili.com') {
-      if (pathname.startsWith('/read/cv')) { mod.onCV?.(hook); continue; }
+      if (pathname.startsWith('/read/cv')) { runHook(mod, 'onCV', mod.onCV); continue; }
       if (pathname.startsWith('/video/')) {
-        mod.onVideo?.(hook);
-        mod.onVideoOrBangumi?.(hook);
+        runHook(mod, 'onVideo', mod.onVideo);
+        runHook(mod, 'onVideoOrBangumi', mod.onVideoOrBangumi);
       } else if (pathname.startsWith('/bangumi/play/')) {
-        mod.onBangumi?.(hook);
-        mod.onVideo?.(hook);
-        mod.onVideoOrBangumi?.(hook);
+        // 上游顺序：onVideo → onBangumi → onVideoOrBangumi（番剧页同样注册 video 钩子）
+        runHook(mod, 'onVideo', mod.onVideo);
+        runHook(mod, 'onBangumi', mod.onBangumi);
+        runHook(mod, 'onVideoOrBangumi', mod.onVideoOrBangumi);
       }
     } else if (hostname === 'live.bilibili.com') {
-      mod.onLive?.(hook);
+      runHook(mod, 'onLive', mod.onLive);
     } else if (hostname === 't.bilibili.com') {
-      mod.onStory?.(hook);
+      runHook(mod, 'onStory', mod.onStory);
     }
   }
 }
@@ -87,7 +94,7 @@ export function createCore(options: CoreOptions): CoreInstance {
   };
   const hook = buildHook(sets, styles, logger);
 
-  dispatchModules(modules, hook, unsafeWindow);
+  dispatchModules(modules, hook, unsafeWindow, logger);
   overrideFetch(unsafeWindow, sets, logger, errorCounter);
   overrideXHR(unsafeWindow, sets, logger, errorCounter);
   injectStyles(unsafeWindow, styles, logger);
