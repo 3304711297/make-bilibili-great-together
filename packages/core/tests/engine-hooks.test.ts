@@ -50,6 +50,21 @@ describe('createCore 引擎', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
+  it('onBeforeFetch 返回新数组时 fetch 收到替换后的实参（链式替换）', async () => {
+    const w = fakeWindow();
+    const spy = w.fetch as ReturnType<typeof vi.fn>;
+    const mod: ModuleMeta = {
+      name: 'replacer',
+      description: '替换测试',
+      any(hook) {
+        hook.onBeforeFetch(() => ['https://replaced.example/x', undefined]);
+      }
+    };
+    createCore({ modules: [mod], console, unsafeWindow: w });
+    await w.fetch('https://www.bilibili.com/original');
+    expect((spy.mock.calls[0] as unknown[])[0]).toBe('https://replaced.example/x');
+  });
+
   it('onXhrOpen 返回 null 时 open/send 被置为 no-op', () => {
     const w = fakeWindow();
     const mod: ModuleMeta = {
