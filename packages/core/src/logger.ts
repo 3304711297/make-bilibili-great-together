@@ -3,7 +3,7 @@ export type MinimalConsole = Pick<Console, 'log' | 'error' | 'warn' | 'info' | '
 const PREFIX = '[mbgt]';
 
 export function createLogger(console: MinimalConsole) {
-  const noop = () => {};
+  const noop = (..._: unknown[]) => {};
   return {
     log: console.log.bind(console, PREFIX),
     error: console.error.bind(console, PREFIX),
