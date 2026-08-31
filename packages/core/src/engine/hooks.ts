@@ -27,7 +27,9 @@ export function overrideFetch(
       let mockResponse: Response | null = null;
       for (const onBeforeFetch of hooks.onBeforeFetchHooks) {
         try {
-          fetchArgs = onBeforeFetch($fetchArgs);
+          // 链式传递：每个 hook 收到上一个 hook 的输出（首轮即 $fetchArgs）；
+          // 原地变异（上游模块依赖同引用）与返回新数组的替换语义两者均生效
+          fetchArgs = onBeforeFetch(fetchArgs as FetchArgs);
           if (fetchArgs === null) { abortFetch = true; break; }
           if ('body' in fetchArgs) { abortFetch = true; mockResponse = fetchArgs as unknown as Response; break; }
         } catch (e) {
@@ -37,7 +39,7 @@ export function overrideFetch(
       if (abortFetch) {
         return (mockResponse as Response) ?? new Response();
       }
-      let response = await Reflect.apply($fetch, this, $fetchArgs);
+      let response = await Reflect.apply($fetch, this, fetchArgs as FetchArgs);
       for (const onResponse of hooks.onResponseHooks) {
         try {
           response = await onResponse(response, $fetchArgs, $fetch);
