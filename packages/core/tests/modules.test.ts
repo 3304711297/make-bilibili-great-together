@@ -113,8 +113,21 @@ describe('getDefaultModules', () => {
       CSSStyleSheet: class { replaceSync() {} }
     } as unknown as Window & typeof globalThis;
     const core = createCore({ modules: getDefaultModules(logger), console: logger, unsafeWindow: w });
-    // use-system-fonts 与 remove-black-backdrop-filter 至少贡献 1 条样式
-    expect(core.getStyles().length).toBeGreaterThanOrEqual(2);
+    // use-system-fonts / remove-black-backdrop-filter / no-ad / optimize-homepage 四个 any 模块均 addStyle
+    expect(core.getStyles().length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('force-enable-4k 的 onVideo 钩子可正常清理播放器偏好键（回归：TDZ）', () => {
+    // 预置一个会被清理的键，确保 hook() 实际触达 OUR_KEYS 分支
+    // （localStorage 为空时 hook 不会引用 OUR_KEYS，这就是此前 22 用例未抓住 TDZ 的原因）
+    (globalThis as any).localStorage.setItem('bilibili_player_force_src', '1');
+    // overrideUA 会以 configurable:false 写 navigator.userAgent（模块按上游设计每页面只跑一次），
+    // 指向独立新对象避免与前面用例留下的只读属性冲突
+    vi.stubGlobal('unsafeWindow', { navigator: { maxTouchPoints: 0 } });
+    const mod = getDefaultModules(logger).find(m => m.name === 'force-enable-4k')!;
+    const h = { addStyle: vi.fn(), onBeforeFetch: vi.fn(), onXhrOpen: vi.fn(), onAfterXhrOpen: vi.fn(), onXhrResponse: vi.fn(), onResponse: vi.fn(), onlyCallOnce: (fn: () => void) => fn() } as any;
+    expect(() => mod.onVideo?.(h)).not.toThrow();
+    expect((globalThis as any).localStorage.getItem('bilibili_player_force_src')).toBe(null);
   });
 
   it('defuse-spyware 将 navigator.sendBeacon 改为恒真', () => {

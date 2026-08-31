@@ -57,7 +57,7 @@ export default function defuseSpyware(logger: Logger): ModuleMeta {
       defineReadonlyProperty(unsafeWindow, '__MIRROR_CONFIG__', undefined);
 
       onBeforeFetch((fetchArgs) => {
-        const url = getUrlFromRequest(fetchArgs[0]);
+        const url = getUrlFromRequest(fetchArgs[0], logger);
 
         if (typeof url === 'string' && shouldDefuseUrl(url)) {
           return new Response();
