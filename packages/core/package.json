@@ -10,5 +10,9 @@
   },
   "devDependencies": {
     "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "flru": "^1.0.2",
+    "foxts": "^5.9.1"
   }
 }
