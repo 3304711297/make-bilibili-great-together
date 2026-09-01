@@ -1,7 +1,7 @@
 import './unsafe-shim';
 import {
   createCore, createLogger, getDefaultModules,
-  startCompatProbe, resolveConflicts, readForceOnOverrides,
+  startCompatProbe, resolveConflicts, readModuleOverrides,
   COMPAT_STATUS_KEY, createBewlyFamilySnapshot, createBridgedKVStore
 } from '@mbgt/core';
 
@@ -27,8 +27,10 @@ startCompatProbe({
   notInstalledGraceMs: 2_000,
   onSettle: (probe) => {
     void (async () => {
-      const overrides = await readForceOnOverrides(store, deferred.map(m => m.name));
-      const { enabled, autoDisabled } = resolveConflicts(deferred, probe, new Set(), overrides);
+      const overrides = await readModuleOverrides(store, deferred.map(m => m.name));
+      // 扩展形态无油猴菜单：'off' 不可能由菜单写入，menuDisabledNames 恒为空集
+      const forceOn = new Set([...overrides.entries()].filter(([, v]) => v === 'force-on').map(([n]) => n));
+      const { enabled, autoDisabled } = resolveConflicts(deferred, probe, new Set(), forceOn);
       for (const d of autoDisabled) logger.log(`[${d.module}] auto-disabled: ${d.extension} (${d.feature}) detected`);
       core.registerModules(enabled);
       await store.set(COMPAT_STATUS_KEY, {

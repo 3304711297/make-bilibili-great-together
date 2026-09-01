@@ -42,4 +42,15 @@ describe('storage bridge', () => {
     et.dispatchEvent(new Event(BRIDGE_REQUEST_EVENT));
     expect(seen).toBe('mbgt:storage-request');
   });
+
+  it('getAll 经桥接往返', async () => {
+    // 沿用该文件既有 fake-host 模式：host 落 memory store，client 走 eventTarget
+    // （createMemoryKVStore/createBridgeHost/createBridgedKVStore 均取文件顶部静态 import——bridge 不导出 createMemoryKVStore，动态 import 会取到 undefined）
+    const store = createMemoryKVStore();
+    await store.set('mbgt:a', 1);
+    const et = new EventTarget();
+    createBridgeHost(store, et);
+    const client = createBridgedKVStore(et);
+    expect(await client.getAll()).toEqual({ 'mbgt:a': 1 });
+  });
 });
