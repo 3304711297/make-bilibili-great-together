@@ -53,8 +53,10 @@ startCompatProbe({
       || hosts.some(h => h.shadowRoot?.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null);
     const hasAveMujicaMarker = whole.querySelector('#bewly-bottom-comment-style') !== null
       || hosts.some(h => h.shadowRoot?.querySelector('#bewly-bottom-comment-style') !== null);
+    // 共用 #bewly[data-version] 挂载点：BewlyCat 命中时取 hosts[0] 版本——单扩展场景正确，
+    // 同页多宿主时非精确（version 精确化留给 Plan 4）；AveMujica 命中时置 null：诚实优于误取 Bewly 系版本
     if (hasBewlyCatMarker) extensions.push({ id: 'bewlycat', version: hosts[0]?.getAttribute('data-version') ?? null });
-    if (hasAveMujicaMarker) extensions.push({ id: 'avemujica', version: hosts[0]?.getAttribute('data-version') ?? null });
+    if (hasAveMujicaMarker) extensions.push({ id: 'avemujica', version: null });
     // 三态契约：特征命中→完整结果；家族在场特征未现→pending-family（保持轮询，超时后 generic）；无家族→null
     if (extensions.length > 0) return { family: 'bewly' as const, extensions, generic: false };
     return 'pending-family';
@@ -81,6 +83,7 @@ startCompatProbe({
         autoDisabled,
         settledAt: Date.now()
       });
-    })();
+    })().catch((e) => logger.error('compat settle chain failed -- deferred modules skipped', e));
+    // fail-closed：结算链失败时 deferred 模块保持不注册（均为非关键 UI 模块，与共存保守方向一致），可见性靠日志补足
   }
 });
