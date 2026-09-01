@@ -20,7 +20,7 @@ try {
   dnr.onRuleMatchedDebug.addListener((raw) => {
     try {
       const info = raw as MatchedInfo;
-      const id = String(info.rule?.ruleIds?.[0] ?? 'unknown');
+      const id = String(info.rule?.ruleIds?.[0] ?? (info.rule as { id?: number })?.id ?? 'unknown');
       session[id] = (session[id] ?? 0) + 1;
       const now = Date.now();
       if (now - lastWrite < 30_000) return; // 30s 节流写盘
