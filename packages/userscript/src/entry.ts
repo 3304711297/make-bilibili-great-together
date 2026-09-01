@@ -11,6 +11,10 @@ import {
   createCdnProbe,
   SETTING_CDN_PROBE,
   SETTING_STATS_BADGE,
+  startStatsFlush,
+  mountStatsBadge,
+  mountFloatingPanel,
+  type ModuleInfo,
   type CdnUtilHooks
 } from '@mbgt/core';
 import { unsafeConsole, unsafeWindowRef } from './gm-adapter';
@@ -27,10 +31,7 @@ void (async () => {
 
   // userscript 形态 document-start 可同步读设置（GM_getValue），开关当页生效
   const cdnProbeEnabled = GM_getValue(SETTING_CDN_PROBE) !== false;
-  const statsBadgeEnabled = GM_getValue(SETTING_STATS_BADGE) === true;
-  // 统计角标挂载在 Task 9 接线（此处仅同步读取生效点），先 void 声明防未用告警
-  void statsBadgeEnabled;
-  const cdnHooksRef: { current?: CdnUtilHooks } = {};
+  const statsBadgeEnabled = GM_getValue(SETTING_STATS_BADGE) === true;  const cdnHooksRef: { current?: CdnUtilHooks } = {};
   if (cdnProbeEnabled) {
     cdnHooksRef.current = {
       probe: createCdnProbe({ fetchLike: createGMProbeFetch(), logger, store })
@@ -92,4 +93,18 @@ void (async () => {
       // fail-closed：结算链失败时 deferred 模块保持不注册（均为非关键 UI 模块，与共存保守方向一致），可见性靠日志补足
     }
   });
+
+  // ── Task 9 接线收口：统计 flush + 角标 + 浮层面板 ──
+  try { startStatsFlush(store); } catch (e) { logger.warn('stats flush start failed', e); }
+  if (statsBadgeEnabled) {
+    // 角标需 DOM 就绪；document_start 时 body 尚无——挂到 DOMContentLoaded 后
+    const mountBadge = () => { try { mountStatsBadge({ store }); } catch { /* 降级 */ } };
+    if (document.body) mountBadge();
+    else document.addEventListener('DOMContentLoaded', mountBadge, { once: true });
+  }
+  const panelModules: ModuleInfo[] = allModules.map(m => ({ name: m.name, description: m.description }));
+  // 面板入口同样等 DOM 就绪
+  const mountPanel = () => { try { mountFloatingPanel({ store, modules: panelModules }); } catch { /* 降级 */ } };
+  if (document.body) mountPanel();
+  else document.addEventListener('DOMContentLoaded', mountPanel, { once: true });
 })();

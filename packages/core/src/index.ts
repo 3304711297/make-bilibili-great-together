@@ -23,4 +23,5 @@ export {
   buildModuleRows, STATS_LABELS, buildStatsView, filterExportableKeys, validateImportPayload,
   type ModuleRow
 } from './features/panel/model';
-export const MBGT_VERSION = '0.1.0';
+export { PanelApp, mountFloatingPanel, loadPanelData, type ModuleInfo, type PanelData } from './features/panel/panel';
+export { MBGT_VERSION } from './version';
