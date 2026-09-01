@@ -21,6 +21,10 @@ export default function removeUselessUrlParams(logger: Logger): ModuleMeta {
   return {
     name: 'remove-useless-url-params',
     description: '清理 URL 中的无用参数',
+    conflicts: [
+      { extension: 'bewlycat', feature: 'cleanUrlArgument' },
+      { extension: 'avemujica', feature: 'cleanUrlArgument' }
+    ],
     any() {
       unsafeWindow.history.replaceState(undefined, '', removeTracking(location.href));
 

@@ -8,6 +8,10 @@ export default function optimizeHomepage(_logger: Logger): ModuleMeta {
   return {
     name: 'optimize-homepage',
     description: '首页广告去除和样式优化',
+    conflicts: [
+      { extension: 'bewlycat', feature: '首页重构' },
+      { extension: 'avemujica', feature: '首页重构' }
+    ],
     any({ addStyle }) {
       addStyle(css`
         .feed2 .feed-card:has(a[href*="cm.bilibili.com"]),
