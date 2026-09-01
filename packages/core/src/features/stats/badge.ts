@@ -1,0 +1,72 @@
+// 统计角标（spec §4.2）：右下角可收起角标，默认关闭，设置里开启（接线层按 mbgt:ui:stats-badge 挂载）。
+// 基线 = mount 时读到的持久计数；实时增量经 onInterception 监听。挂载失败只损失可视化（降级原则）。
+import type { KVStore } from '../../platform/storage';
+import { onInterception, readStats, sessionCounts } from './registry';
+
+const BADGE_ID = 'mbgt-stats-badge';
+
+const BADGE_STYLE = `
+#${BADGE_ID}{position:fixed;right:12px;bottom:12px;z-index:2147483000;font:12px/1.4 system-ui,sans-serif;
+  background:rgba(20,20,20,.85);color:#fff;padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
+#${BADGE_ID} ul{position:fixed;right:12px;bottom:44px;margin:0;padding:8px 12px;list-style:none;
+  background:rgba(20,20,20,.9);color:#fff;border-radius:8px;max-width:260px;display:none}
+#${BADGE_ID}.open ul{display:block}
+`;
+
+export function mountStatsBadge(opts: { store: KVStore }): (() => void) | null {
+  try {
+    if (document.getElementById(BADGE_ID)) return null;
+
+    const chip = document.createElement('div');
+    chip.id = BADGE_ID;
+    const list = document.createElement('ul');
+    const label = document.createElement('span');
+    chip.appendChild(list);
+    chip.appendChild(label);
+    const style = document.createElement('style');
+    style.textContent = BADGE_STYLE;
+
+    let baselineCounts: Record<string, number> = {};
+    let destroyed = false;
+
+    const sum = (m: Record<string, number>) => Object.values(m).reduce((s, v) => s + v, 0);
+    const render = () => {
+      if (destroyed) return;
+      const live = sessionCounts();
+      label.textContent = `🛡 ${sum(baselineCounts) + sum(live)}`;
+      const merged = { ...baselineCounts };
+      for (const [k, v] of Object.entries(live)) merged[k] = (merged[k] ?? 0) + v;
+      const items = Object.entries(merged).filter(([, v]) => v > 0);
+      list.replaceChildren(...(
+        items.length > 0
+          ? items.map(([k, v]) => {
+            const li = document.createElement('li');
+            li.textContent = `${k}: ${v}`;
+            return li;
+          })
+          : (() => { const li = document.createElement('li'); li.textContent = '（暂无拦截记录）'; return [li]; })()
+      ));
+    };
+
+    const off = onInterception(() => render());
+    void readStats(opts.store).then(stored => {
+      baselineCounts = stored.counts;
+      render();
+    }).catch(() => { /* 基线读取失败仍可显示会话计数 */ });
+
+    chip.addEventListener('click', () => chip.classList.toggle('open'));
+    render();
+    document.head?.appendChild(style);
+    document.body?.appendChild(chip);
+
+    return () => {
+      destroyed = true;
+      off();
+      chip.remove();
+      style.remove();
+    };
+  } catch (e) {
+    console.warn('[mbgt] stats badge mount failed', e);
+    return null;
+  }
+}
