@@ -1,4 +1,5 @@
 import { createBridgeHost, createMemoryKVStore } from '@mbgt/core';
+import { createExtensionProbeFetch } from './probe-fetch';
 
 // MAIN world 无法访问扩展 storage API（仅 ISOLATED/background 可用）：
 // 此监听端把桥接请求落到扩展 storage.local。命名空间双解析 browser ?? chrome——
@@ -12,11 +13,13 @@ try {
   store = {
     async get(key) { return (await browserApi.storage.local.get(key))[key]; },
     async set(key, value) { await browserApi.storage.local.set({ [key]: value }); },
-    async delete(key) { await browserApi.storage.local.remove(key); }
+    async delete(key) { await browserApi.storage.local.remove(key); },
+    async getAll() { return await browserApi.storage.local.get(null); }
   };
 } catch {
   console.warn('[mbgt] storage bridge falling back to in-memory store');
   store = createMemoryKVStore();
 }
 
-createBridgeHost(store, window);
+// probe 通道挂载：MAIN world 的探测请求经桥接落到本世界的裸 fetch（未被 no-p2p hook 改写）
+createBridgeHost(store, window, createExtensionProbeFetch());

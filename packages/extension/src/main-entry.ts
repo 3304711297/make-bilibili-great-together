@@ -1,21 +1,19 @@
 import './unsafe-shim';
 import {
-  createCore, createLogger, getDefaultModules,
-  startCompatProbe, resolveConflicts, readForceOnOverrides,
-  COMPAT_STATUS_KEY, createBewlyFamilySnapshot, createBridgedKVStore
+  createCore, createLogger, getDefaultModules, startCompatProbe, resolveConflicts,
+  COMPAT_STATUS_KEY, createBewlyFamilySnapshot, createBridgedKVStore, createBridgedProbeFetch,
+  createCdnProbe, readSettingsWithBudget, startStatsFlush, mountStatsBadge, type CdnUtilHooks
 } from '@mbgt/core';
 
 const logger = createLogger(console);
-const store = createBridgedKVStore(globalThis as unknown as EventTarget);
-const allModules = getDefaultModules(logger);
+const eventTarget = globalThis as unknown as EventTarget;
+const store = createBridgedKVStore(eventTarget);
 
-// 扩展形态无油猴菜单：模块默认全启用，override 键（mbgt:override:*）由 options 页写入（Plan 4 完整面板）
-// 与 userscript entry 语义对齐：immediate（无 conflicts）进初始 createCore（document-start 语义）；
-// deferred（带 conflicts）不进初始 createCore，探测结算的 registerModules 是其唯一注册点——
-// 否则 compat 停用被架空（带冲突模块已在页面上生效，结算时才被"停用"）
+// 即时模块同步派发（document-start 语义优先，扩展形态即时模块无关闭开关——裁定见 Plan 4 Task 6）
+const cdnHooksRef: { current?: CdnUtilHooks } = {};
+const allModules = getDefaultModules(logger, { cdnHooksRef });
 const immediate = allModules.filter(m => !m.conflicts?.length);
 const core = createCore({ modules: immediate, console, unsafeWindow: unsafeWindow });
-
 const deferred = allModules.filter(m => m.conflicts?.length);
 
 startCompatProbe({
@@ -27,8 +25,10 @@ startCompatProbe({
   notInstalledGraceMs: 2_000,
   onSettle: (probe) => {
     void (async () => {
-      const overrides = await readForceOnOverrides(store, deferred.map(m => m.name));
-      const { enabled, autoDisabled } = resolveConflicts(deferred, probe, new Set(), overrides);
+      const settings = await readSettingsWithBudget(store, deferred.map(m => m.name));
+      const forceOn = new Set([...settings.overrides.entries()].filter(([, v]) => v === 'force-on').map(([n]) => n));
+      const menuDisabled = new Set([...settings.overrides.entries()].filter(([, v]) => v === 'off').map(([n]) => n));
+      const { enabled, autoDisabled } = resolveConflicts(deferred, probe, menuDisabled, forceOn);
       for (const d of autoDisabled) logger.log(`[${d.module}] auto-disabled: ${d.extension} (${d.feature}) detected`);
       core.registerModules(enabled);
       await store.set(COMPAT_STATUS_KEY, {
@@ -41,3 +41,18 @@ startCompatProbe({
     })().catch((e) => logger.error('compat settle chain failed -- deferred modules skipped', e));
   }
 });
+
+// 设置回填：probe 挂载 + 统计 flush + 统计角标（Task 9 接线收口；页内浮层面板不挂——面板入口=工具栏 options 页，见 Task 10）
+void (async () => {
+  const settings = await readSettingsWithBudget(store, allModules.map(m => m.name));
+  if (settings.cdnProbe) {
+    cdnHooksRef.current = { probe: createCdnProbe({ fetchLike: createBridgedProbeFetch(eventTarget), logger, store }) };
+  }
+  try { startStatsFlush(store); } catch (e) { logger.warn('stats flush start failed', e); }
+  if (settings.statsBadge) {
+    // 角标需 DOM 就绪（对齐 userscript 侧守卫）；body 未就绪时挂到 DOMContentLoaded 后
+    const mountBadge = () => { try { mountStatsBadge({ store }); } catch { /* 降级 */ } };
+    if (document.body) mountBadge();
+    else document.addEventListener('DOMContentLoaded', mountBadge, { once: true });
+  }
+})().catch((e) => logger.warn('mbgt settings backfill failed', e));

@@ -14,8 +14,14 @@
 import { pickOne } from 'foxts/pick-random';
 import { createRetrieKeywordFilter } from 'foxts/retrie';
 import type { Logger } from '../logger';
+import type { CdnProbe } from '../features/cdn-probe/probe';
 import flru from 'flru';
 import { split0th } from 'foxts/split-nth';
+
+export interface CdnUtilHooks {
+  /** 懒挂载的探测实例（接线层异步读取设置后回填，见 Plan 4 Task 6） */
+  probe?: CdnProbe;
+}
 
 const PROXY_TF = 'proxy-tf-all-ws.bilivideo.com';
 const FALLBACK_CDN_HOST = 'upos-sz-mirrorali.bilivideo.com';
@@ -58,7 +64,7 @@ export interface CdnUrlData {
   mcdn_tf_urls?: Set<string>
 }
 
-export function createCDNUtil(logger: Logger) {
+export function createCDNUtil(logger: Logger, hooksRef?: { current?: CdnUtilHooks }) {
   // All upgcxcode hosts are interchangeable, so we collect them here
   const mirror_type_upgcxcode_hosts = new Set<string>();
   const bcache_type_upgcxcode_hosts = new Set<string>();
@@ -121,6 +127,17 @@ export function createCDNUtil(logger: Logger) {
       return basicP2PReplacement(typeof url === 'string' ? new URL(url) : url, meta);
     }
   };
+
+  // upgcxcode 路径/签名跨镜像宿主可互换：探测缓存有效时固定换到最优宿主，否则回退上游随机
+  function selectMirrorUrl(candidates: string[], incomingUrl: string | URL): string {
+    const best = hooksRef?.current?.probe?.getBestHost();
+    if (best) {
+      const url = new URL(typeof incomingUrl === 'string' ? incomingUrl : incomingUrl.href);
+      url.hostname = best.host;
+      return url.href;
+    }
+    return pickOne(candidates);
+  }
 
   function extractCDNFromVideoOrAudio(data: unknown[]) {
     // In the data there is an array of baseUrl/backupUrl objects
@@ -267,7 +284,7 @@ export function createCDNUtil(logger: Logger) {
             getReplacementUrl = () => mirrorUrlsArray[0];
             break;
           }
-          getReplacementUrl = () => pickOne(mirrorUrlsArray);
+          getReplacementUrl = (url) => selectMirrorUrl(mirrorUrlsArray, url);
           break;
         }
         // bcache urls are not as good as mirror urls, but still better than p2p cdn,
@@ -363,6 +380,11 @@ export function createCDNUtil(logger: Logger) {
           mcdn_tf_urls
         });
       });
+
+      const probe = hooksRef?.current?.probe;
+      if (probe && mirror_urls.size > 0) {
+        probe.ensureProbe(Array.from(mirror_type_upgcxcode_hosts), Array.from(mirror_urls)[0]);
+      }
     }
   }
 

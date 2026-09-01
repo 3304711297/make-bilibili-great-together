@@ -1,8 +1,9 @@
 // Ported from SukkaW/Make-Bilibili-Great-Than-Ever-Before (MIT) © SukkaW
-import { noop, trueFn } from 'foxts/noop';
+import { noop } from 'foxts/noop';
 import { getUrlFromRequest } from '../utils/get-url-from-request';
 import { createMockClass } from '../utils/mock-class';
 import { defineReadonlyProperty } from '../utils/define-readonly-property';
+import { recordInterception } from '../features/stats/registry';
 import type { ModuleMeta } from '../types';
 import type { Logger } from '../logger';
 import { createRetrieKeywordFilter } from 'foxts/retrie';
@@ -18,7 +19,10 @@ export default function defuseSpyware(logger: Logger): ModuleMeta {
     name: 'defuse-spyware',
     description: '禁用叔叔日志上报和用户跟踪的无限请求风暴',
     any({ onBeforeFetch, onXhrOpen }) {
-      defineReadonlyProperty(unsafeWindow.navigator, 'sendBeacon', trueFn);
+      defineReadonlyProperty(unsafeWindow.navigator, 'sendBeacon', () => {
+        recordInterception('beacon');
+        return true;
+      });
 
       const SentryHub = createMockClass('SentryHub');
 
@@ -60,6 +64,7 @@ export default function defuseSpyware(logger: Logger): ModuleMeta {
         const url = getUrlFromRequest(fetchArgs[0], logger);
 
         if (typeof url === 'string' && shouldDefuseUrl(url)) {
+          recordInterception('spyware-fetch');
           return new Response();
         };
 
@@ -73,6 +78,7 @@ export default function defuseSpyware(logger: Logger): ModuleMeta {
         }
 
         if (shouldDefuseUrl(url)) {
+          recordInterception('spyware-xhr');
           return null;
         }
 

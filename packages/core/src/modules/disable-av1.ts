@@ -1,6 +1,7 @@
 // Ported from SukkaW/Make-Bilibili-Great-Than-Ever-Before (MIT) © SukkaW
 import type { ModuleMeta } from '../types';
 import type { Logger } from '../logger';
+import { recordInterception } from '../features/stats/registry';
 
 export default function disableAV1(logger: Logger): ModuleMeta {
   // only call once, since fucking Bilibili now storming us with AV1 check
@@ -22,6 +23,7 @@ export default function disableAV1(logger: Logger): ModuleMeta {
         HTMLMediaElement.prototype.canPlayType = function (type) {
           if (type.includes('av01')) {
             onlyCallOnce(logAv1Disabled.HTMLVideoElement_canPlayType);
+            recordInterception('av1-blocked');
             return '';
           };
           return origCanPlayType.call(this, type);
@@ -35,6 +37,7 @@ export default function disableAV1(logger: Logger): ModuleMeta {
         unsafeWindow.MediaSource.isTypeSupported = function (type) {
           if (type.includes('av01')) {
             onlyCallOnce(logAv1Disabled.MediaSource_isTypeSupported);
+            recordInterception('av1-blocked');
             return false;
           }
           return origIsTypeSupported.call(this, type);
