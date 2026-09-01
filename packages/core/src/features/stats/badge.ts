@@ -59,10 +59,18 @@ export function mountStatsBadge(opts: { store: KVStore }): (() => void) | null {
     };
 
     const off = onInterception(() => render());
-    void readStats(opts.store).then(stored => {
-      baselineCounts = stored.counts;
+    void readBadgeBaseline(opts.store).then(base => {
+      baselineCounts = base;
       render();
     }).catch(() => { /* 基线读取失败仍可显示会话计数 */ });
+    // Plan 5 §3：30s 低频重读持久基线（含 DNR，同口径最终一致）；叠加当前会话未归档增量，不覆盖实时计数
+    const baselineTimer = setInterval(() => {
+      void readBadgeBaseline(opts.store).then(base => {
+        if (destroyed) return;
+        baselineCounts = base;
+        render();
+      }).catch(() => { /* 重读失败保持上次基线 */ });
+    }, 30_000);
 
     chip.addEventListener('click', () => chip.classList.toggle('open'));
     render();
@@ -71,6 +79,7 @@ export function mountStatsBadge(opts: { store: KVStore }): (() => void) | null {
 
     return () => {
       destroyed = true;
+      clearInterval(baselineTimer);
       off();
       chip.remove();
       style.remove();

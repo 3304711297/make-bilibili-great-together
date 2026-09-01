@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mountStatsBadge, readBadgeBaseline } from '../src/features/stats/badge';
 import { recordInterception } from '../src/features/stats/registry';
 import { createMemoryKVStore } from '../src/platform/storage';
@@ -25,5 +25,22 @@ describe('stats badge', () => {
     const base = await readBadgeBaseline(store);
     expect(base.beacon).toBe(5);
     expect(base.dnr).toBe(5); // 3+2 归并
+  });
+
+  it('badge 30s 重读基线不吃掉会话未归档增量（归零口径下无重复计数）', async () => {
+    vi.resetModules(); // 会话计数是模块级状态：动态取全新 registry/badge 实例，隔离本文件前序用例的 recordInterception
+    const { recordInterception: record } = await import('../src/features/stats/registry');
+    const { mountStatsBadge: mount } = await import('../src/features/stats/badge');
+    vi.useFakeTimers();
+    const store = createMemoryKVStore();
+    await store.set('mbgt:stats:counters', { counts: { beacon: 100 }, flushedAt: 1 });
+    const destroy = mount({ store })!;
+    await vi.advanceTimersByTimeAsync(10);
+    expect(document.getElementById('mbgt-stats-badge')!.textContent).toContain('100');
+    record('beacon', 7); // 实时 107
+    await vi.advanceTimersByTimeAsync(30_000); // 30s 重读基线（此时仍 100）→ 100+7=107
+    expect(document.getElementById('mbgt-stats-badge')!.textContent).toContain('107');
+    vi.useRealTimers();
+    destroy();
   });
 });
