@@ -1,12 +1,14 @@
 import { createBridgeHost, createMemoryKVStore } from '@mbgt/core';
 
-// MAIN world 无法访问 browser.storage（扩展 API 仅 ISOLATED/background 可用）：
-// 此监听端把桥接请求落到 browser.storage.local；桥接初始化失败时降级内存 store（仅本页生效，status 不持久化但核心功能不受影响）
+// MAIN world 无法访问扩展 storage API（仅 ISOLATED/background 可用）：
+// 此监听端把桥接请求落到扩展 storage.local。命名空间双解析 browser ?? chrome——
+// Edge（Chromium 系）不提供 browser.*（Firefox promise 风格命名空间），仅 chrome.*；
+// 两者都缺时降级内存 store（仅本页生效，status 不持久化但核心功能不受影响）
 let store: import('@mbgt/core').KVStore;
 try {
-  // get 返回值用 any 索引签名（而非 Record<string, unknown>）：适配 KVStore.get<T> 的泛型实现赋值（tsc 零错误），运行时行为不变
-  const browserApi = (globalThis as unknown as { browser?: { storage: { local: { get: (k: string | null) => Promise<{ [key: string]: any }>; set: (v: Record<string, unknown>) => Promise<void>; remove: (k: string | string[]) => Promise<void> } } } }).browser;
-  if (!browserApi) throw new Error('browser.storage unavailable');
+  const browserApi = (globalThis as unknown as { browser?: MbgtExtensionApi; chrome?: MbgtExtensionApi }).browser
+    ?? (globalThis as unknown as { chrome?: MbgtExtensionApi }).chrome;
+  if (!browserApi) throw new Error('browser/chrome storage unavailable');
   store = {
     async get(key) { return (await browserApi.storage.local.get(key))[key]; },
     async set(key, value) { await browserApi.storage.local.set({ [key]: value }); },
