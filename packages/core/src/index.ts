@@ -13,6 +13,7 @@ export {
   flushStats, startStatsFlush, readStats, type StatsPayload
 } from './features/stats/registry';
 export { DNR_STATS_KEY, mergeDnrCounts, type DnrStatsPayload } from './features/stats/dnr';
+export { mountStatsBadge } from './features/stats/badge';
 export {
   PROBE_TIMEOUT_MS, PROBE_CACHE_TTL_MS, CDN_PROBE_STATUS_KEY,
   type ProbeFetch, type CdnProbeResult, type CdnProbeStatus, type CdnProbe, createCdnProbe
