@@ -47,7 +47,9 @@ export function startCompatProbe(options: CompatProbeOptions): void {
   const cancelInterval = loop(settleFromSnapshot);
   const cancelTimeout = scheduler(() => {
     const result = snapshot();
-    if (result === 'pending-family') {
+    if (result !== null && result !== 'pending-family') {
+      settle(result); // 超时瞬间特征已出现：按真实结果结算
+    } else if (result === 'pending-family') {
       // 家族在场但特征始终未现：按保守 generic 结算
       settle({ family: 'bewly', extensions: [], generic: true });
     } else {

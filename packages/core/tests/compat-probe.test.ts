@@ -60,6 +60,19 @@ describe('startCompatProbe', () => {
     expect(onSettle).toHaveBeenCalledWith({ family: null, extensions: [], generic: false });
   });
 
+  it('超时瞬间特征已出现→按真实结果结算，不丢 family（竞态锁定）', () => {
+    const s = fakeScheduler();
+    const onSettle = vi.fn();
+    let result: SnapshotResult = 'pending-family';
+    // interval 拉长到超过 timeout：本轮 advance 内仅 timeout 回调访问 snapshot，隔离竞态路径
+    startCompatProbe({ snapshot: () => result, scheduler: s.schedule, intervalMs: 20_000, onSettle });
+    expect(onSettle).not.toHaveBeenCalled();
+    result = { family: 'bewly', extensions: [{ id: 'bewlycat', version: '1.7.8' }], generic: false };
+    s.advance(10_000);
+    expect(onSettle).toHaveBeenCalledTimes(1);
+    expect(onSettle).toHaveBeenCalledWith({ family: 'bewly', extensions: [{ id: 'bewlycat', version: '1.7.8' }], generic: false });
+  });
+
   it('pending-family 期间特征出现→立即结算，不再等超时', () => {
     const s = fakeScheduler();
     const onSettle = vi.fn();
