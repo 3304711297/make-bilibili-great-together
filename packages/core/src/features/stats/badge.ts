@@ -2,8 +2,18 @@
 // 基线 = mount 时读到的持久计数；实时增量经 onInterception 监听。挂载失败只损失可视化（降级原则）。
 import type { KVStore } from '../../platform/storage';
 import { onInterception, readStats, sessionCounts } from './registry';
+import { foldDnrCounts, DNR_STATS_KEY, type DnrStatsPayload } from './dnr';
 
 const BADGE_ID = 'mbgt-stats-badge';
+
+/** 角标/面板同口径持久基线：content 统计 + DNR（归并为 'dnr'）。T1 数据入口，T4 的 30s 重读复用。 */
+export async function readBadgeBaseline(store: KVStore): Promise<Record<string, number>> {
+  const [stats, dnr] = await Promise.all([
+    readStats(store),
+    store.get<DnrStatsPayload>(DNR_STATS_KEY)
+  ]);
+  return { ...stats.counts, ...foldDnrCounts(dnr?.counts ?? {}) };
+}
 
 const BADGE_STYLE = `
 #${BADGE_ID}{position:fixed;right:12px;bottom:12px;z-index:2147483000;font:12px/1.4 system-ui,sans-serif;
