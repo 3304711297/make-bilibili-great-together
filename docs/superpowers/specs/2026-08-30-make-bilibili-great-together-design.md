@@ -63,6 +63,8 @@ interface ModuleMeta {
 - 探测方式：等待并匹配两个扩展注入的 DOM 特征（BewlyCat 的 bewly 容器/顶栏替换节点、AveMujica 同源特征节点），`MutationObserver` + 启动轮询兜底；超时（如 10s）未命中视为未安装。
 - 命中冲突 → 对应模块自动禁用，禁用原因（哪个扩展、哪个功能）写入共存面板与统计看板。
 - **优先级**：两者同时安装时以 BewlyCat 冲突表为准（功能面更全）。
+
+> 2026-09-01 裁定：优先级规则细化为——仅 BewlyCat 识别成功用 BewlyCat 表；仅 AveMujica 用 AveMujica 表；两者都识别成功或家族在场无法区分（generic）时取两表**并集**（两扩展的功能都真实在场，保守禁用）。实现见 `packages/core/src/features/compat/resolve.ts`。
 - **手动覆盖**：面板中可对被自动禁用的模块强制开启，用户拍板优先于探测，状态持久化。
 
 ### 3.3 初始冲突表（继承 15 模块）

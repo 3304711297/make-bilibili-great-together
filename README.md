@@ -4,7 +4,7 @@
 B 站反跟踪、反 PCDN/P2P、播放链路增强，**双形态**（userscript + MV3 扩展），与
 [BewlyCat](https://github.com/keleus/BewlyCat)、[BewlyBewly! AveMujica](https://github.com/VentusUta/BewlyBewly-AveMujica) 共存感知。
 
-> 当前状态：核心引擎与 userscript 形态（Plan 1）。共存感知、扩展形态、点睛功能开发中。
+> 当前状态：核心引擎、userscript 形态与共存感知（Plan 1+2）。扩展形态、CDN 选优、统计看板、设置面板开发中。
 
 ## 安装（userscript）
 
