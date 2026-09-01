@@ -22,6 +22,10 @@ export default function noAd(_logger: Logger): ModuleMeta {
   return {
     name: 'no-ad',
     description: '防止叔叔通过广告给自己赚棺材钱',
+    conflicts: [
+      { extension: 'bewlycat', feature: 'blockAds / 首页重构' },
+      { extension: 'avemujica', feature: 'blockAds / 首页重构' }
+    ],
     any({ addStyle }) {
       // 去广告
 

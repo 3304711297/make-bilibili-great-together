@@ -8,6 +8,9 @@ export default function playerVideoFit(_logger: Logger): ModuleMeta {
   return {
     name: 'player-video-fit',
     description: '播放器视频裁切模式',
+    conflicts: [
+      { extension: 'bewlycat', feature: 'bewlyWidescreen / 播放器样式' }
+    ],
     onVideo({ addStyle }) {
       addStyle(css`body[video-fit] #bilibili-player video { object-fit: cover; } .bpx-player-ctrl-setting-fit-mode { display: flex;width: 100%;height: 32px;line-height: 32px; } .bpx-player-ctrl-setting-box .bui-panel-wrap, .bpx-player-ctrl-setting-box .bui-panel-item { min-height: 172px !important; }`);
       let timer: number;

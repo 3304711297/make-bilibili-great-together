@@ -9,6 +9,10 @@ export default function optimizeStory(_logger: Logger): ModuleMeta {
   return {
     name: 'optimize-story',
     description: '动态页面优化',
+    conflicts: [
+      { extension: 'bewlycat', feature: '动态页改造（provisional）' },
+      { extension: 'avemujica', feature: '动态页改造（provisional）' }
+    ],
     onStory({ addStyle }) {
       addStyle(css`
         html[wide] #app { display: flex; }
