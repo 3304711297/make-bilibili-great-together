@@ -22,3 +22,15 @@ declare const GM: {
 // 同步版 storage API 以独立全局形式注入沙箱（@grant GM_getValue / GM_setValue），非 GM 对象的成员
 declare function GM_getValue(name: string): unknown | undefined;
 declare function GM_setValue(name: string, value: unknown): void;;
+
+// gm-probe-fetch 使用 GM_xmlhttpRequest（meta 已 @grant GM_xmlhttpRequest + @connect bilivideo.com）：
+// 本仓库用到的最小子集——Range 头 GET 探测（onload/onerror/ontimeout 三态回调）
+declare function GM_xmlhttpRequest(details: {
+  method: string;
+  url: string;
+  headers?: Record<string, string>;
+  timeout?: number;
+  onload?: (response: unknown) => void;
+  onerror?: (response: unknown) => void;
+  ontimeout?: () => void;
+}): unknown;

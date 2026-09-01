@@ -7,19 +7,36 @@ import {
   resolveConflicts,
   readModuleOverrides,
   migrateLegacyEnabledKeys,
-  COMPAT_STATUS_KEY
+  COMPAT_STATUS_KEY,
+  createCdnProbe,
+  SETTING_CDN_PROBE,
+  SETTING_STATS_BADGE,
+  type CdnUtilHooks
 } from '@mbgt/core';
 import { unsafeConsole, unsafeWindowRef } from './gm-adapter';
 import { initModuleMenu, getModuleEnabledSync } from './module-menu';
 import { createGMKVStore } from './gm-storage';
+import { createGMProbeFetch } from './gm-probe-fetch';
 
 // 顶层包成 async IIFE：旧 mbgt:enabled:* 键的迁移走异步 GM storage，须先于菜单注册完成
 void (async () => {
   const logger = createLogger(unsafeConsole());
   const store = createGMKVStore();
-  const allModules = getDefaultModules(logger);
 
   await migrateLegacyEnabledKeys(store);
+
+  // userscript 形态 document-start 可同步读设置（GM_getValue），开关当页生效
+  const cdnProbeEnabled = GM_getValue(SETTING_CDN_PROBE) !== false;
+  const statsBadgeEnabled = GM_getValue(SETTING_STATS_BADGE) === true;
+  // 统计角标挂载在 Task 9 接线（此处仅同步读取生效点），先 void 声明防未用告警
+  void statsBadgeEnabled;
+  const cdnHooksRef: { current?: CdnUtilHooks } = {};
+  if (cdnProbeEnabled) {
+    cdnHooksRef.current = {
+      probe: createCdnProbe({ fetchLike: createGMProbeFetch(), logger, store })
+    };
+  }
+  const allModules = getDefaultModules(logger, { cdnHooksRef });
 
   // 全部 15 个模块的菜单都要注册且只注册一次（禁用态也能在菜单里切回来）
   for (const mod of allModules) {
