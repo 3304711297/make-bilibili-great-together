@@ -21,6 +21,7 @@ jobs:
         run: |
           test -f packages/extension/dist/manifest.json
           test -f packages/extension/dist/main.js
+          test -f packages/extension/dist/background.js
           test -f packages/extension/make-bilibili-great-together-extension.zip
       - name: 产物冒烟
         run: |

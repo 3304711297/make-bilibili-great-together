@@ -12,4 +12,5 @@ export {
   STATS_KEY, recordInterception, onInterception, sessionCounts,
   flushStats, startStatsFlush, readStats, type StatsPayload
 } from './features/stats/registry';
+export { DNR_STATS_KEY, mergeDnrCounts, type DnrStatsPayload } from './features/stats/dnr';
 export const MBGT_VERSION = '0.1.0';
