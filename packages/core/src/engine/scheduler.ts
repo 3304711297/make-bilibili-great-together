@@ -63,7 +63,18 @@ function dispatchModule(mod: ModuleMeta, hook: MakeBilibiliGreatTogetherHook, un
 
 function dispatchModules(modules: ModuleMeta[], hook: MakeBilibiliGreatTogetherHook, unsafeWindow: Window & typeof globalThis, logger: Logger): void {
   for (const mod of modules) {
+    dispatchOne(mod, hook, unsafeWindow, logger);
+  }
+}
+
+// 单模块隔离：钩子抛错只记账该模块，不得阻断后续模块分发。
+// 真机冒烟（2026-09-01）：视频页上一个模块抛错曾使 no-p2p/no-webrtc/remove-black-backdrop-filter
+// 全部未执行（defuse-storage length 自引用炸栈，经 force-enable-4k 钩子触发）。
+function dispatchOne(mod: ModuleMeta, hook: MakeBilibiliGreatTogetherHook, unsafeWindow: Window & typeof globalThis, logger: Logger): void {
+  try {
     dispatchModule(mod, hook, unsafeWindow, logger);
+  } catch (e) {
+    logger.error(`[${mod.name}] dispatch failed, skipped`, e as Error);
   }
 }
 
@@ -117,7 +128,7 @@ export function createCore(options: CoreOptions): CoreInstance {
     getStyles: () => styles,
     registerModules(newModules) {
       for (const mod of newModules) {
-        dispatchModule(mod, hook, unsafeWindow, logger);
+        dispatchOne(mod, hook, unsafeWindow, logger);
       }
       flushStyles();
     },
