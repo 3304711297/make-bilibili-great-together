@@ -10,6 +10,7 @@ export type ProbeFetch = (url: string, timeoutMs: number) => Promise<{ ok: boole
 
 export const PROBE_TIMEOUT_MS = 2_000;
 export const PROBE_CACHE_TTL_MS = 5 * 60_000;
+export const REPROBE_DELAY_MS = 30_000;
 export const CDN_PROBE_STATUS_KEY = 'mbgt:cdn:probe:status';
 
 export interface CdnProbeResult { host: string; ms: number; ok: boolean }
@@ -25,6 +26,7 @@ export interface CdnProbe {
   ensureProbe(candidateHosts: string[], sampleUrl: string): void;
   getBestHost(): { host: string; expiresAt: number } | null;
   getStatus(): CdnProbeStatus | null;
+  destroy(): void;
 }
 
 export function createCdnProbe(opts: { fetchLike: ProbeFetch; logger: Logger; store: KVStore }): CdnProbe {
@@ -32,21 +34,30 @@ export function createCdnProbe(opts: { fetchLike: ProbeFetch; logger: Logger; st
   let status: CdnProbeStatus | null = null;
   let probing = false;
   let cache: { host: string; expiresAt: number } | null = null;
+  let lastInput: { hosts: string[]; sampleUrl: string } | null = null;
+  let reprobeTimer: ReturnType<typeof setTimeout> | null = null;
 
   return {
-    ensureProbe(candidateHosts, sampleUrl) {
-      if (probing) return;
-      if (cache && cache.expiresAt > Date.now()) return;
-      const hosts = [...new Set(candidateHosts)];
-      if (hosts.length === 0) return;
-      probing = true;
-      void runProbe(hosts, sampleUrl);
-    },
+    ensureProbe(candidateHosts, sampleUrl) { ensureProbe(candidateHosts, sampleUrl); },
     getBestHost() {
       return cache && cache.expiresAt > Date.now() ? cache : null;
     },
-    getStatus() { return status; }
+    getStatus() { return status; },
+    destroy() {
+      if (reprobeTimer) { clearTimeout(reprobeTimer); reprobeTimer = null; }
+      lastInput = null;
+    }
   };
+
+  function ensureProbe(candidateHosts: string[], sampleUrl: string): void {
+    if (candidateHosts.length > 0) lastInput = { hosts: [...new Set(candidateHosts)], sampleUrl };
+    if (probing) return;
+    if (cache && cache.expiresAt > Date.now()) return;
+    const hosts = [...new Set(candidateHosts)];
+    if (hosts.length === 0) return;
+    probing = true;
+    void runProbe(hosts, sampleUrl);
+  }
 
   async function runProbe(hosts: string[], sampleUrl: string): Promise<void> {
     const startedAt = Date.now();
@@ -68,6 +79,14 @@ export function createCdnProbe(opts: { fetchLike: ProbeFetch; logger: Logger; st
     if (best) cache = { host: best.host, expiresAt: Date.now() + PROBE_CACHE_TTL_MS };
     status = { bestHost: best?.host ?? null, results, startedAt, finishedAt: Date.now(), fallback: !best };
     probing = false;
+    if (reprobeTimer) { clearTimeout(reprobeTimer); reprobeTimer = null; } // 冻结：单 timer，新探测重排
+    if (best) {
+      reprobeTimer = setTimeout(() => {
+        reprobeTimer = null;
+        if (cache && Date.now() >= cache.expiresAt && lastInput) ensureProbe(lastInput.hosts, lastInput.sampleUrl);
+      }, PROBE_CACHE_TTL_MS + REPROBE_DELAY_MS);
+    }
+    // fallback（全败）不安排：等待下一次外部 ensureProbe 触发
     if (best) logger.info(`CDN probe finished: best=${best.host} (${best.ms}ms)`, { results });
     else logger.warn('CDN probe: all candidates failed, fallback to random mirror', { results });
     try {

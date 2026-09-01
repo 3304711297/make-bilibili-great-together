@@ -84,7 +84,19 @@ export function PanelApp(props: { store: KVStore; modules: ModuleInfo[] }) {
       console.warn('[mbgt] panel load failed', e);
     }
   };
-  useEffect(() => { void reload(); }, []);
+  // Plan 5 §3：打开期 2s 链式轮询（上一轮完成后再安排下一轮——单飞，防慢读乱序）；关闭 cleanup 零开销
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const loop = async () => {
+      if (cancelled) return;
+      try { await reload(); } catch { /* 读失败保留旧数据 */ }
+      if (cancelled) return;
+      timer = setTimeout(loop, 2_000);
+    };
+    void loop();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, []);
 
   if (!data) return h('div', null, '加载中…');
 
@@ -151,6 +163,7 @@ export function PanelApp(props: { store: KVStore; modules: ModuleInfo[] }) {
           : `最近探测：最优 ${data.cdnStatus.bestHost}；${data.cdnStatus.results.map(r => `${r.host} ${r.ok ? `${r.ms}ms` : '失败'}`).join('，')}`)
         : '尚未探测（播放器取到镜像列表后自动触发）'
     ),
+    h('div', { className: 'mbgt-muted' }, '单候选也会探测并展示延迟'),
     h('div', { className: 'mbgt-muted' }, '扩展形态：开关自下个页面加载起完全生效'),
     // ── 统计 ──
     h('h4', null, `拦截统计（合计 ${data.statsView.total}）`),
