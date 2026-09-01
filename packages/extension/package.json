@@ -1,0 +1,22 @@
+{
+  "name": "@mbgt/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c rollup.config.mjs && node scripts/build-extension.mjs && node scripts/make-zip.mjs",
+    "test": "echo \"no unit tests in extension package\" && exit 0",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@mbgt/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-replace": "^6.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "adm-zip": "^0.5.0",
+    "rollup": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}

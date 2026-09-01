@@ -1,0 +1,11 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "requestDomains": ["data.bilibili.com", "cm.bilibili.com"],
+      "resourceTypes": ["xmlhttprequest", "ping", "script", "other"]
+    }
+  }
+]
