@@ -4,7 +4,7 @@
 B 站反跟踪、反 PCDN/P2P、播放链路增强，**双形态**（userscript + MV3 扩展），与
 [BewlyCat](https://github.com/keleus/BewlyCat)、[BewlyBewly! AveMujica](https://github.com/VentusUta/BewlyBewly-AveMujica) 共存感知。
 
-> 当前状态：v0.2.0 — 核心引擎、userscript/扩展双形态、共存感知、设置与面板、CDN 智能选优、拦截统计均已上线。
+> 当前状态：v0.3.0 — 核心引擎、userscript/扩展双形态、共存感知、设置与面板、CDN 智能选优、拦截统计均已上线。
 
 ## 安装（userscript）
 
@@ -18,7 +18,7 @@ Releases 下载 `make-bilibili-great-together-extension.zip` 并**解压**（或
 
 > **请勿与 userscript 形态同时启用**：两种形态都会在页面主世界包装 fetch/XHR，同装会产生双重注入与重复日志。二选一即可。
 
-## 设置与面板（v0.2.0）
+## 设置与面板（v0.3.0）
 
 - **userscript 形态**：页面右下角 `⚙ MBGT` 胶囊打开悬浮面板；油猴菜单的模块开关与面板共用同一配置键（`mbgt:override:*`，三值：默认开 / `off` 关闭 / `force-on` 强制开启）。
 - **扩展形态**：工具栏图标 → options 页即面板。即时模块（反跟踪、防 P2P 等无冲突 9 项）在扩展形态**锁定不可关**——这是为保住 document-start 拦截语义的刻意取舍（接线层异步读设置赶不上页面内联脚本）；带冲突的 6 项可三态切换。

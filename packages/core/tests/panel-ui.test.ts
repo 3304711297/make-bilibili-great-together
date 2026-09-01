@@ -91,12 +91,12 @@ describe('面板 2s 轮询（Plan 5）', () => {
     (store as any).get = async () => { throw new Error('boom'); };
     await vi.advanceTimersByTimeAsync(2_100);
     expect(container.textContent).toContain('模块开关');
-    // 关闭：render(null) 卸载 → cleanup 停止轮询
+    // 关闭：render(null) 卸载 → cleanup 停止轮询（数值快照断言，非函数引用）
+    const frozenCount = gets;
     render(null as any, container);
-    const frozen = loadOnce;
     (store as any).get = async (k: string) => { gets++; return origGet(k); };
     await vi.advanceTimersByTimeAsync(6_000);
-    expect(loadOnce()).toBe(frozen()); // 关闭后零调用
+    expect(gets).toBe(frozenCount); // 关闭后零调用
     vi.useRealTimers();
   });
 });
