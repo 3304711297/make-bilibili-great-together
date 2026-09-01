@@ -58,3 +58,41 @@ export async function migrateLegacyEnabledKeys(store: KVStore): Promise<void> {
     // 迁移失败不阻断启动（降级原则）
   }
 }
+
+export const SETTING_CDN_PROBE = 'mbgt:cdn:probe';
+export const SETTING_STATS_BADGE = 'mbgt:ui:stats-badge';
+
+export interface WiringSettings {
+  overrides: Map<string, ModuleOverride>;
+  cdnProbe: boolean;
+  statsBadge: boolean;
+}
+
+/**
+ * 接线层设置读取（预算内失败/超时回退默认值）。
+ * 裁定（2026-09-01 Plan 4）：此函数结果仅用于——deferred 模块结算门控、CDN probe 挂载、
+ * 统计角标挂载；即时模块派发不等待它（document-start 语义优先）。
+ */
+export async function readSettingsWithBudget(
+  store: KVStore,
+  moduleNames: readonly string[],
+  budgetMs = 300
+): Promise<WiringSettings> {
+  const defaults: WiringSettings = { overrides: new Map(), cdnProbe: true, statsBadge: false };
+  const read = (async () => {
+    const [overrides, cdnProbe, statsBadge] = await Promise.all([
+      readModuleOverrides(store, moduleNames),
+      store.get<boolean>(SETTING_CDN_PROBE).then(v => v ?? true),
+      store.get<boolean>(SETTING_STATS_BADGE).then(v => v ?? false)
+    ]);
+    return { overrides, cdnProbe, statsBadge };
+  })();
+  try {
+    return await Promise.race([
+      read,
+      new Promise<WiringSettings>(resolve => setTimeout(() => resolve(defaults), budgetMs))
+    ]);
+  } catch {
+    return defaults;
+  }
+}

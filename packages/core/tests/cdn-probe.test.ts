@@ -47,4 +47,14 @@ describe('cdn-probe 状态机', () => {
     expect(probe.getStatus()!.fallback).toBe(true);
     expect(probe.getBestHost()).toBe(null);
   });
+
+  it('探测中重复 ensureProbe 不启动第二次探测（fetchLike 仅调用一次）', async () => {
+    // fetchLike 返回永不 resolve 的 promise：探测卡在 probing 态，第二次 ensureProbe 不得再触发探测
+    const fetchLike = vi.fn(() => new Promise<{ ok: boolean; ms: number }>(() => {}));
+    const probe = createCdnProbe({ fetchLike: fetchLike as any, logger, store });
+    probe.ensureProbe(['h.bilivideo.com'], 'https://h.bilivideo.com/upgcxcode/x.m4s');
+    probe.ensureProbe(['h.bilivideo.com'], 'https://h.bilivideo.com/upgcxcode/x.m4s');
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(fetchLike).toHaveBeenCalledTimes(1);
+  });
 });

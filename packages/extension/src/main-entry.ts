@@ -1,21 +1,19 @@
 import './unsafe-shim';
 import {
-  createCore, createLogger, getDefaultModules,
-  startCompatProbe, resolveConflicts, readModuleOverrides,
-  COMPAT_STATUS_KEY, createBewlyFamilySnapshot, createBridgedKVStore
+  createCore, createLogger, getDefaultModules, startCompatProbe, resolveConflicts,
+  COMPAT_STATUS_KEY, createBewlyFamilySnapshot, createBridgedKVStore, createBridgedProbeFetch,
+  createCdnProbe, readSettingsWithBudget, type CdnUtilHooks
 } from '@mbgt/core';
 
 const logger = createLogger(console);
-const store = createBridgedKVStore(globalThis as unknown as EventTarget);
-const allModules = getDefaultModules(logger);
+const eventTarget = globalThis as unknown as EventTarget;
+const store = createBridgedKVStore(eventTarget);
 
-// 扩展形态无油猴菜单：模块默认全启用，override 键（mbgt:override:*）由 options 页写入（Plan 4 完整面板）
-// 与 userscript entry 语义对齐：immediate（无 conflicts）进初始 createCore（document-start 语义）；
-// deferred（带 conflicts）不进初始 createCore，探测结算的 registerModules 是其唯一注册点——
-// 否则 compat 停用被架空（带冲突模块已在页面上生效，结算时才被"停用"）
+// 即时模块同步派发（document-start 语义优先，扩展形态即时模块无关闭开关——裁定见 Plan 4 Task 6）
+const cdnHooksRef: { current?: CdnUtilHooks } = {};
+const allModules = getDefaultModules(logger, { cdnHooksRef });
 const immediate = allModules.filter(m => !m.conflicts?.length);
 const core = createCore({ modules: immediate, console, unsafeWindow: unsafeWindow });
-
 const deferred = allModules.filter(m => m.conflicts?.length);
 
 startCompatProbe({
@@ -27,10 +25,10 @@ startCompatProbe({
   notInstalledGraceMs: 2_000,
   onSettle: (probe) => {
     void (async () => {
-      const overrides = await readModuleOverrides(store, deferred.map(m => m.name));
-      // 扩展形态无油猴菜单：'off' 不可能由菜单写入，menuDisabledNames 恒为空集
-      const forceOn = new Set([...overrides.entries()].filter(([, v]) => v === 'force-on').map(([n]) => n));
-      const { enabled, autoDisabled } = resolveConflicts(deferred, probe, new Set(), forceOn);
+      const settings = await readSettingsWithBudget(store, deferred.map(m => m.name));
+      const forceOn = new Set([...settings.overrides.entries()].filter(([, v]) => v === 'force-on').map(([n]) => n));
+      const menuDisabled = new Set([...settings.overrides.entries()].filter(([, v]) => v === 'off').map(([n]) => n));
+      const { enabled, autoDisabled } = resolveConflicts(deferred, probe, menuDisabled, forceOn);
       for (const d of autoDisabled) logger.log(`[${d.module}] auto-disabled: ${d.extension} (${d.feature}) detected`);
       core.registerModules(enabled);
       await store.set(COMPAT_STATUS_KEY, {
@@ -43,3 +41,11 @@ startCompatProbe({
     })().catch((e) => logger.error('compat settle chain failed -- deferred modules skipped', e));
   }
 });
+
+// 设置回填：probe 挂载 + 统计角标（Task 7 mountStatsBadge 在 Task 9 接入；此处先落 cdnHooksRef）
+void (async () => {
+  const settings = await readSettingsWithBudget(store, allModules.map(m => m.name));
+  if (settings.cdnProbe) {
+    cdnHooksRef.current = { probe: createCdnProbe({ fetchLike: createBridgedProbeFetch(eventTarget), logger, store }) };
+  }
+})().catch((e) => logger.warn('mbgt settings backfill failed', e));

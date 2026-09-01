@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createMemoryKVStore, type KVStore } from '../src/platform/storage';
-import { createBridgeHost, createBridgedKVStore, BRIDGE_REQUEST_EVENT } from '../src/platform/bridge';
+import { createBridgeHost, createBridgedKVStore, BRIDGE_REQUEST_EVENT, BRIDGE_RESPONSE_EVENT } from '../src/platform/bridge';
 
 function wired(): { client: KVStore; hostStore: KVStore; unload: () => void } {
   const et = new EventTarget();
@@ -52,5 +52,33 @@ describe('storage bridge', () => {
     createBridgeHost(store, et);
     const client = createBridgedKVStore(et);
     expect(await client.getAll()).toEqual({ 'mbgt:a': 1 });
+  });
+
+  it('probe action 经桥接往返（isolated 返回 { ok, ms }）', async () => {
+    const { createBridgeHost, createBridgedProbeFetch } = await import('../src/platform/bridge');
+    const et = new EventTarget();
+    const probeFetch = async (url: string) => ({ ok: url.startsWith('https://'), ms: 42 });
+    createBridgeHost(createMemoryKVStore(), et, probeFetch as any);
+    const client = createBridgedProbeFetch(et);
+    const r = await client('https://upos.bilivideo.com/x.m4s', 2_000);
+    expect(r).toEqual({ ok: true, ms: 42 });
+    const r2 = await client('http://bad', 2_000);
+    expect(r2.ok).toBe(false);
+  });
+
+  it('未知 action 回 ok:false 且不误删既有键（delete 分支显式化 + unknown 兜底）', async () => {
+    const et = new EventTarget();
+    const hostStore = createMemoryKVStore();
+    createBridgeHost(hostStore, et);
+    const client = createBridgedKVStore(et);
+    await client.set('keep', 1);
+    const res = await new Promise<{ id: string; ok: boolean; error?: string }>(resolve => {
+      const listener = (ev: Event) => resolve((ev as CustomEvent<{ id: string; ok: boolean; error?: string }>).detail);
+      et.addEventListener(BRIDGE_RESPONSE_EVENT, listener, { once: true });
+      et.dispatchEvent(new CustomEvent(BRIDGE_REQUEST_EVENT, { detail: { id: 'u1', action: 'bogus', key: 'keep' } }));
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error).toContain('unknown action');
+    expect(await hostStore.get('keep')).toBe(1);
   });
 });
