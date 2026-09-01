@@ -11,7 +11,6 @@ export interface StatsPayload {
 }
 
 const session: Record<string, number> = {};
-let flushedBaseline: Record<string, number> = {};
 const listeners = new Set<(kind: string, count: number) => void>();
 
 export function recordInterception(kind: string, count = 1): void {
@@ -30,25 +29,33 @@ export function sessionCounts(): Record<string, number> {
   return { ...session };
 }
 
+let flushing = false;
+
 export async function flushStats(store: KVStore): Promise<void> {
+  if (flushing) return; // 冻结#2：单飞——并发重入直接返回，同一 delta 不重复扣除
+  flushing = true;
   try {
     const stored = await store.get<StatsPayload>(STATS_KEY);
     const storedCounts = stored?.counts ?? {};
+    // delta 快照在 get 之后、set 之前取：set 间隙的新增留在会话，不会被本次归零吃掉
+    const delta: Record<string, number> = {};
     let dirty = false;
-    const merged: Record<string, number> = { ...storedCounts };
     for (const [kind, n] of Object.entries(session)) {
-      const delta = n - (flushedBaseline[kind] ?? 0);
-      if (delta > 0) {
-        merged[kind] = (merged[kind] ?? 0) + delta;
-        dirty = true;
-      }
+      if (n > 0) { delta[kind] = n; dirty = true; }
     }
-    if (!dirty && stored) return; // 无增量不写
+    if (!dirty && stored) return; // 无增量不写（也不产空 payload）
+    const merged: Record<string, number> = { ...storedCounts };
+    for (const [kind, v] of Object.entries(delta)) merged[kind] = (merged[kind] ?? 0) + v;
     await store.set(STATS_KEY, { counts: merged, flushedAt: Date.now() });
-    // 写盘成功后才推进 baseline：set 抛错时增量保留，下轮 flush 重试（降级原则）
-    flushedBaseline = { ...session };
+    // 写盘成功后归零已落盘部分：await 间隙的新增（会话值已大于 delta）保留到下轮
+    for (const [kind, v] of Object.entries(delta)) {
+      const left = (session[kind] ?? 0) - v;
+      if (left > 0) session[kind] = left; else delete session[kind];
+    }
   } catch {
-    // 落盘失败不影响统计收集
+    // 落盘失败：不扣减，增量保留，下轮重试（Plan 4 T2 裁定）
+  } finally {
+    flushing = false;
   }
 }
 

@@ -20,3 +20,9 @@ export function mergeDnrCounts(
   }
   return merged;
 }
+
+/** DNR 规则键（ruleId 数字串）归并为单一 'dnr' kind——与面板 buildStatsView 口径一致 */
+export function foldDnrCounts(dnrCounts: Record<string, number>): Record<string, number> {
+  const total = Object.values(dnrCounts).reduce((s, v) => s + v, 0);
+  return total > 0 ? { dnr: total } : {};
+}
