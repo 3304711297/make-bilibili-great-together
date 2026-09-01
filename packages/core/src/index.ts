@@ -8,4 +8,8 @@ export { BRIDGE_REQUEST_EVENT, BRIDGE_RESPONSE_EVENT, createBridgeHost, createBr
 export { startCompatProbe, type ExtensionId, type DetectedExtension, type ProbeResult, type SnapshotResult, type CompatProbeOptions } from './platform/compat-types';
 export { CONFLICT_TABLE, resolveConflicts } from './features/compat/resolve';
 export { createBewlyFamilySnapshot, type BewlySnapshotOptions } from './features/compat/snapshot';
+export {
+  STATS_KEY, recordInterception, onInterception, sessionCounts,
+  flushStats, startStatsFlush, readStats, type StatsPayload
+} from './features/stats/registry';
 export const MBGT_VERSION = '0.1.0';
