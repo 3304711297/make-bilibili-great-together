@@ -16,25 +16,14 @@ try {
   const session: Record<string, number> = {};
   let baseline: Record<string, number> = {};
   let lastWrite = 0;
-  let dumped = false; // TEMP-DEBUG（下一轮移除）：首事件形态 dump 幂等守卫
 
   dnr.onRuleMatchedDebug.addListener((raw) => {
     try {
       const info = raw as MatchedInfo;
-      const id = String(info.rule?.ruleIds?.[0] ?? (info.rule as { id?: number })?.id ?? 'unknown');
+      // 四级回退（实测 Edge 154 形态 { rule: { ruleId: 1, rulesetId } } 为第二级 ruleId；ruleIds 为文档形态优先）
+      const id = String(info.rule?.ruleIds?.[0] ?? (info.rule as { ruleId?: number })?.ruleId ?? (info.rule as { id?: number })?.id ?? 'unknown');
       session[id] = (session[id] ?? 0) + 1;
       const now = Date.now();
-      // TEMP-DEBUG（下一轮移除）：Edge 154 事件形态未知，一次性 dump 首个事件的可枚举键树
-      if (!dumped) {
-        dumped = true;
-        const shape: Record<string, unknown> = { topKeys: Object.keys(raw as object) };
-        try {
-          const info = raw as Record<string, unknown>;
-          shape.ruleKeys = info.rule ? Object.keys(info.rule as object) : null;
-          shape.ruleSample = info.rule ? JSON.parse(JSON.stringify(info.rule)) : null;
-        } catch { /* 序列化失败时留 null */ }
-        void api.storage.local.set({ 'mbgt:debug:dnr-event': shape }).catch(() => {});
-      }
       if (now - lastWrite < 30_000) return; // 30s 节流写盘
       lastWrite = now;
       void (async () => {
