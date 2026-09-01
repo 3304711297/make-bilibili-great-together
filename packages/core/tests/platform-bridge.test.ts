@@ -27,7 +27,10 @@ describe('storage bridge', () => {
   });
 
   it('卸载后请求不再被处理', async () => {
-    const { client, unload } = wired();
+    // 此用例需单独建 client（不走 wired()）：传 50ms 超时消除默认 3s 的等待
+    const et = new EventTarget();
+    const unload = createBridgeHost(createMemoryKVStore(), et);
+    const client = createBridgedKVStore(et, 50);
     unload();
     await expect(client.get('k')).resolves.toBeUndefined();
   });
