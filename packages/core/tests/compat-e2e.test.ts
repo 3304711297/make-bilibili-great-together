@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createCore } from '../src/engine/scheduler';
 import { startCompatProbe } from '../src/platform/compat-types';
-import { createMemoryKVStore, readForceOnOverrides, COMPAT_STATUS_KEY } from '../src/platform/storage';
+import { createMemoryKVStore, readModuleOverrides, COMPAT_STATUS_KEY } from '../src/platform/storage';
 import { resolveConflicts } from '../src/features/compat/resolve';
 
 // 结构复用 fakeScheduler（compat-probe）与 fakeWindow（engine-late-register）的既有写法，勿 import 测试文件
@@ -69,8 +69,9 @@ describe('compat 端到端：立即注册 + 延迟注册 + 状态落盘', () => 
     s.advance(200);
 
     const menuDisabled = new Set<string>();
-    const overrides = await readForceOnOverrides(store, deferred.map(m => m.name));
-    const { enabled, autoDisabled } = resolveConflicts(deferred, probeResult, menuDisabled, overrides);
+    const overrides = await readModuleOverrides(store, deferred.map(m => m.name));
+    const forceOnOverrides = new Set([...overrides.entries()].filter(([, v]) => v === 'force-on').map(([n]) => n));
+    const { enabled, autoDisabled } = resolveConflicts(deferred, probeResult, menuDisabled, forceOnOverrides);
     core.registerModules(enabled);
     await store.set(COMPAT_STATUS_KEY, { family: probeResult.family, extensions: probeResult.extensions.map((e: any) => e.id), generic: probeResult.generic, autoDisabled, settledAt: Date.now() });
 

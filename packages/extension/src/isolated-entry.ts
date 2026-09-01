@@ -12,7 +12,8 @@ try {
   store = {
     async get(key) { return (await browserApi.storage.local.get(key))[key]; },
     async set(key, value) { await browserApi.storage.local.set({ [key]: value }); },
-    async delete(key) { await browserApi.storage.local.remove(key); }
+    async delete(key) { await browserApi.storage.local.remove(key); },
+    async getAll() { return await browserApi.storage.local.get(null); }
   };
 } catch {
   console.warn('[mbgt] storage bridge falling back to in-memory store');
