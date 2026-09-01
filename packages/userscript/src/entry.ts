@@ -21,17 +21,34 @@ import { unsafeConsole, unsafeWindowRef } from './gm-adapter';
 import { initModuleMenu, getModuleEnabledSync } from './module-menu';
 import { createGMKVStore } from './gm-storage';
 import { createGMProbeFetch } from './gm-probe-fetch';
+import { isTopFrame } from './top-frame';
 
 // 顶层包成 async IIFE：旧 mbgt:enabled:* 键的迁移走异步 GM storage，须先于菜单注册完成
 void (async () => {
   const logger = createLogger(unsafeConsole());
   const store = createGMKVStore();
 
+  // ── 顶层框架守卫（仅核心同步派发路径，early-return 放最前）──
+  // B 站同源隐藏 iframe（correspond）也命中 @match：非顶层框架只跑核心派发，
+  // 跳过一切共享存储/菜单/UI/探测（iframe 结算会覆盖主页面 compat 状态，真机冒烟实证）
+  if (!isTopFrame(unsafeWindowRef)) {
+    const iframeModules = getDefaultModules(logger, {});
+    const enabledImmediate = iframeModules.filter(m => !m.conflicts?.length).filter(m => getModuleEnabledSync(m.name));
+    createCore({
+      modules: enabledImmediate,
+      console: unsafeConsole(),
+      unsafeWindow: unsafeWindowRef
+    });
+    return;
+  }
+
+  // ── 主路径（顶层框架）：迁移 + 同步设置读取 + 菜单 + deferred 探测 + 统计 + 面板 ──
   await migrateLegacyEnabledKeys(store);
 
   // userscript 形态 document-start 可同步读设置（GM_getValue），开关当页生效
   const cdnProbeEnabled = GM_getValue(SETTING_CDN_PROBE) !== false;
-  const statsBadgeEnabled = GM_getValue(SETTING_STATS_BADGE) === true;  const cdnHooksRef: { current?: CdnUtilHooks } = {};
+  const statsBadgeEnabled = GM_getValue(SETTING_STATS_BADGE) === true;
+  const cdnHooksRef: { current?: CdnUtilHooks } = {};
   if (cdnProbeEnabled) {
     cdnHooksRef.current = {
       probe: createCdnProbe({ fetchLike: createGMProbeFetch(), logger, store })
