@@ -74,10 +74,10 @@
 
 | 任务 | 内容 |
 |---|---|
-| T1 | registry 归零语义 + flush 单飞 + badge DNR 基线/30s 重读 |
+| T1 | 统计数据层：registry 归零语义 + flush 单飞 + badge 数据逻辑（DNR 基线读取/合并、合计公式、30s 重读所需的数据计算语义——mount 与重读共用同一入口） |
 | T2 | cdnUtil pendingProbe + replayPendingProbe + selectMirrorUrl 候选副本化 + hooksRef.cdnUtil + 接线层回填 |
 | T3 | probe 主动重探（TTL+30s 单飞 timer + lastInput + destroy） |
-| T4 | 面板 2s 链式轮询 + badge 30s 重读接线 + 版本 0.3.0 + README + 冒烟 + tag |
+| T4 | UI/生命周期接线：面板 2s 链式轮询 + badge 30s timer/cleanup（接入 T1 数据逻辑）+ 版本 0.3.0 + README + 冒烟 + tag |
 
 ## 6. 降级原则（不变）
 
