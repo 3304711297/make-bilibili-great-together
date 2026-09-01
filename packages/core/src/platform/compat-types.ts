@@ -19,6 +19,10 @@ export interface CompatProbeOptions {
   snapshot: () => SnapshotResult;
   intervalMs?: number;
   timeoutMs?: number;
+  /** 家族缺席判定：返回 true 表示确定未安装，宽限期满仍缺席则提前按未安装结算 */
+  notInstalledCheck?: () => boolean;
+  /** 提前结算宽限期（ms），默认 2000；一次性计时，触发时需再确认 snapshot 仍为 null */
+  notInstalledGraceMs?: number;
   /** 返回取消函数；测试注入假调度器 */
   scheduler: (cb: () => void, ms: number) => () => void;
   onSettle: (result: ProbeResult) => void;
@@ -28,25 +32,57 @@ export function startCompatProbe(options: CompatProbeOptions): void {
   const { snapshot, scheduler, onSettle } = options;
   const intervalMs = options.intervalMs ?? 200;
   const timeoutMs = options.timeoutMs ?? 10_000;
+  const notInstalledCheck = options.notInstalledCheck;
+  const notInstalledGraceMs = options.notInstalledGraceMs ?? 2_000;
 
   let settled = false;
+  let cancelGrace: (() => void) | null = null;
   const settle = (result: ProbeResult) => {
     if (settled) return;
     settled = true;
     cancelInterval();
     cancelTimeout();
+    cancelGrace?.();
     onSettle(result);
   };
 
   const settleFromSnapshot = () => {
-    const result = snapshot();
+    let result: SnapshotResult;
+    try {
+      result = snapshot();
+    } catch {
+      return; // 轮询路径抛错视为本轮 null：继续轮询
+    }
     // 仅特征命中（完整 ProbeResult）触发结算；null 与 pending-family 继续轮询
-    if (result !== null && result !== 'pending-family') settle(result);
+    if (result !== null && result !== 'pending-family') {
+      settle(result);
+      return;
+    }
+    // R2 提前结算：家族缺席（确定未安装）→ 启动一次性宽限计时；
+    // 宽限期内宿主出现（interval 命中结算）则 settle 内连带取消宽限计时
+    if (result === null && notInstalledCheck?.() && cancelGrace === null) {
+      cancelGrace = scheduler(() => {
+        cancelGrace = null;
+        let recheck: SnapshotResult;
+        try {
+          recheck = snapshot();
+        } catch {
+          recheck = null;
+        }
+        // 宽限期满仍缺席才结算未安装；宿主已出现/pending-family 则继续原轮询逻辑
+        if (recheck === null) settle({ family: null, extensions: [], generic: false });
+      }, notInstalledGraceMs);
+    }
   };
 
   const cancelInterval = loop(settleFromSnapshot);
   const cancelTimeout = scheduler(() => {
-    const result = snapshot();
+    let result: SnapshotResult;
+    try {
+      result = snapshot();
+    } catch {
+      result = null; // 超时路径抛错按未安装结算
+    }
     if (result !== null && result !== 'pending-family') {
       settle(result); // 超时瞬间特征已出现：按真实结果结算
     } else if (result === 'pending-family') {
