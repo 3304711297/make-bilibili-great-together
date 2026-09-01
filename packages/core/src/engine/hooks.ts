@@ -76,6 +76,9 @@ export function overrideXHR(
         }
       }
       if (xhrArgs === null) {
+        // R1：仍执行真实 open（不产生网络流量），使 state=OPENED——
+        // B 站代码绑定原始 setRequestHeader 引用，仅 noop 实例属性会残留 InvalidStateError 噪音
+        super.open(...($args as Parameters<XMLHttpRequest['open']>));
         this.send = () => {};
         this.setRequestHeader = () => {};
         return;

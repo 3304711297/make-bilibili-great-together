@@ -91,15 +91,16 @@ export function createCore(options: CoreOptions): CoreInstance {
     const useCSSOM = !!CSSOM && typeof CSSOM.prototype.replaceSync === 'function' && Array.isArray(doc.adoptedStyleSheets);
     for (const css of styles) {
       if (injectedStyles.has(css)) continue;
-      injectedStyles.add(css);
       if (useCSSOM) {
         const sheet = new (CSSOM as typeof CSSStyleSheet)();
         sheet.replaceSync(css);
         doc.adoptedStyleSheets.push(sheet);
+        injectedStyles.add(css); // 注入成功后才标记：抛错时该样式下次 flush 重试
       } else {
         const el = doc.createElement('style');
         el.textContent = css;
         doc.head?.appendChild(el);
+        injectedStyles.add(css); // 同上：append 成功后才标记
         logger.debug('style tag fallback used');
       }
     }

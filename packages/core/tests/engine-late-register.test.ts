@@ -7,7 +7,8 @@ function fakeWindow(pathname = '/video/BV1') {
     fetch: vi.fn(async () => new Response('original')),
     console,
     location: { hostname: 'www.bilibili.com', pathname },
-    XMLHttpRequest: class { open() {} send() {} },
+    // open 真正执行时置 OPENED：abort 路径测试以此为可观测面（实例 spy 无法命中 super 链）
+    XMLHttpRequest: class { open() { (this as { readyState?: number }).readyState = 1; } send() {} },
     document: {
       adoptedStyleSheets: [] as unknown[],
       createElement: () => ({}),
@@ -65,5 +66,25 @@ describe('CoreInstance.registerModules（晚注册）', () => {
     core.registerModules([shared]);
     expect(((w as any).document.adoptedStyleSheets).length).toBe(1);
     core.onUnload();
+  });
+});
+
+describe('overrideXHR abort 路径（R1：仍 open，noise 消除）', () => {
+  it('onXhrOpen 返回 null 时 open 仍执行（state=OPENED）而 send/setRequestHeader 为 noop', () => {
+    const w = fakeWindow();
+    const mod: ModuleMeta = {
+      name: 'xhr-blocker', description: '',
+      any(h) { h.onXhrOpen(() => null); }
+    };
+    createCore({ modules: [mod], console, unsafeWindow: w });
+    const xhr = new w.XMLHttpRequest();
+    xhr.open('GET', 'https://data.bilibili.com/report');
+    // B 站绑定原始 setRequestHeader 引用，仅 noop 实例属性会残留 InvalidStateError 噪音——
+    // open 必须已真正执行（readyState=1 OPENED）
+    expect(xhr.readyState).toBe(1);
+    // send/setRequestHeader 为 noop：不产生网络流量
+    expect(() => xhr.send()).not.toThrow();
+    expect(() => xhr.setRequestHeader('x', 'y')).not.toThrow();
+    expect(xhr.readyState).toBe(1); // noop send 不改变状态
   });
 });

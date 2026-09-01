@@ -19,6 +19,10 @@ export const CONFLICT_TABLE: Record<ExtensionId, Record<string, string>> = {
   }
 };
 
+// 导出前冻结：防止运行时误改冲突表（表内容视为静态契约）
+for (const row of Object.values(CONFLICT_TABLE)) Object.freeze(row);
+Object.freeze(CONFLICT_TABLE);
+
 export function resolveConflicts(
   modules: ModuleMeta[],
   probe: ProbeResult,
@@ -35,7 +39,9 @@ export function resolveConflicts(
     // generic：保守并集（specific 为空且非 generic 时不启用任何冲突行，全部照常启用）
     activeRows.push(mergedRow());
   }
-  for (const id of specific) {
+  // specific 行序固定：并集归因不再依赖 probe.extensions 的检测顺序（bewlycat 行优先）
+  const ORDER: ExtensionId[] = ['bewlycat', 'avemujica'];
+  for (const id of ORDER.filter(o => specific.includes(o))) {
     activeRows.push(rowOf(id));
   }
 

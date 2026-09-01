@@ -86,3 +86,64 @@ describe('startCompatProbe', () => {
     expect(onSettle).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('startCompatProbe 提前结算（notInstalledCheck）', () => {
+  it('readyState complete 且宽限期内仍无宿主→按未安装提前结算', () => {
+    const s = fakeScheduler();
+    const onSettle = vi.fn();
+    startCompatProbe({
+      snapshot: () => null,
+      scheduler: s.schedule,
+      onSettle,
+      notInstalledCheck: () => true,
+      notInstalledGraceMs: 2_000
+    });
+    s.advance(1_999);
+    expect(onSettle).not.toHaveBeenCalled();
+    s.advance(1);
+    expect(onSettle).toHaveBeenCalledWith({ family: null, extensions: [], generic: false });
+  });
+
+  it('宽限期内宿主出现（snapshot 返回完整结果）→正常结算而非未安装', () => {
+    const s = fakeScheduler();
+    const onSettle = vi.fn();
+    let result: null | ProbeResult = null;
+    startCompatProbe({
+      snapshot: () => result,
+      scheduler: s.schedule,
+      onSettle,
+      notInstalledCheck: () => true,
+      notInstalledGraceMs: 2_000
+    });
+    s.advance(1_000);
+    result = { family: 'bewly', extensions: [{ id: 'bewlycat', version: '1.6.9' }], generic: false };
+    s.advance(1_500);
+    expect(onSettle).toHaveBeenCalledWith(result);
+  });
+
+  it('pending-family 不受提前结算影响（宿主在场特征未现仍等满超时）', () => {
+    const s = fakeScheduler();
+    const onSettle = vi.fn();
+    startCompatProbe({
+      snapshot: () => 'pending-family',
+      scheduler: s.schedule,
+      onSettle,
+      notInstalledCheck: () => true,
+      notInstalledGraceMs: 2_000
+    });
+    s.advance(5_000);
+    expect(onSettle).not.toHaveBeenCalled();
+    s.advance(5_000);
+    expect(onSettle).toHaveBeenCalledWith({ family: 'bewly', extensions: [], generic: true });
+  });
+
+  it('notInstalledCheck 未提供时行为与旧版完全一致', () => {
+    const s = fakeScheduler();
+    const onSettle = vi.fn();
+    startCompatProbe({ snapshot: () => null, scheduler: s.schedule, onSettle });
+    s.advance(9_999);
+    expect(onSettle).not.toHaveBeenCalled();
+    s.advance(1);
+    expect(onSettle).toHaveBeenCalledWith({ family: null, extensions: [], generic: false });
+  });
+});
