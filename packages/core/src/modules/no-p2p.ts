@@ -3,10 +3,11 @@ import { noop } from 'foxts/noop';
 import type { ModuleMeta } from '../types';
 import type { Logger } from '../logger';
 import { defineReadonlyProperty } from '../utils/define-readonly-property';
-import { createCDNUtil } from '../utils/get-cdn-url';
+import { createCDNUtil, type CdnUtilHooks } from '../utils/get-cdn-url';
 import { never } from 'foxts/guard';
 import { createRetrieKeywordFilter } from 'foxts/retrie';
 import { onDOMContentLoaded } from '../utils/on-load-event';
+import { recordInterception } from '../features/stats/registry';
 
 const knownNonVideoPattern = createRetrieKeywordFilter([
   'bilibili.com',
@@ -35,10 +36,19 @@ function isObject(value: unknown): value is object {
   return typeof value === 'object' && value !== null;
 }
 
-export default function noP2P(logger: Logger): ModuleMeta {
+export default function noP2P(logger: Logger, cdnHooksRef?: { current?: CdnUtilHooks }): ModuleMeta {
   // 上游为 utils/get-cdn-url 中的模块级懒加载单例 getCDNUtil()；core 内 logger 需注入，
   // 故改为工厂作用域内持有一个 createCDNUtil(logger) 实例（每次 getDefaultModules 调用各创建一次）
-  const cdnUtil = createCDNUtil(logger);
+  const cdnUtil = createCDNUtil(logger, cdnHooksRef);
+
+  // 统计埋点：只在 URL 实际被改写时计数（包装不改变替换语义与错误路径）
+  const replaceCdnUrl = (url: string | URL, meta: string): string => {
+    const out = cdnUtil.getReplacementCdnUrl(url, meta);
+    try {
+      if (out !== (typeof url === 'string' ? url : url.href)) recordInterception('p2p-replaced');
+    } catch { /* 统计不影响替换 */ }
+    return out;
+  };
 
   return {
     name: 'no-p2p',
@@ -102,7 +112,7 @@ export default function noP2P(logger: Logger): ModuleMeta {
               // they will use another way to fetch the real url and turn it into blob url anyway
               // we can intercept that fetch/XHR instead
               try {
-                value = cdnUtil.getReplacementCdnUrl(value, 'HTMLMediaElement.prototype.src');
+                value = replaceCdnUrl(value, 'HTMLMediaElement.prototype.src');
               } catch (e) {
                 logger.error('Failed to handle HTMLMediaElement.prototype.src setter', e, { value });
               }
@@ -120,7 +130,7 @@ export default function noP2P(logger: Logger): ModuleMeta {
         }
 
         try {
-          xhrOpenArgs[1] = cdnUtil.getReplacementCdnUrl(xhrUrl, 'XMLHttpRequest.prototype.open');
+          xhrOpenArgs[1] = replaceCdnUrl(xhrUrl, 'XMLHttpRequest.prototype.open');
         } catch (e) {
           logger.error('Failed to replace P2P for XMLHttpRequest.prototype.open', e, { xhrUrl });
         }
@@ -132,12 +142,12 @@ export default function noP2P(logger: Logger): ModuleMeta {
         let input = fetchArgs[0];
         if (typeof input === 'string' || 'href' in input) { // string | URL
           if (!isKnownNonVideoUrl(input)) {
-            input = cdnUtil.getReplacementCdnUrl(input, 'fetch');
+            input = replaceCdnUrl(input, 'fetch');
             fetchArgs[0] = input;
           }
         } else if ('url' in input) { // Request
           if (!isKnownNonVideoUrl(input.url)) {
-            input = new Request(cdnUtil.getReplacementCdnUrl(input.url, 'fetch'), input);
+            input = new Request(replaceCdnUrl(input.url, 'fetch'), input);
             fetchArgs[0] = input;
           }
         } else {

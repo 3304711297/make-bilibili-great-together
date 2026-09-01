@@ -15,5 +15,6 @@ const plugins = [
 export default [
   { input: 'src/main-entry.ts', output: { file: 'dist/main.js', format: 'iife', sourcemap: false }, plugins },
   { input: 'src/isolated-entry.ts', output: { file: 'dist/isolated.js', format: 'iife', sourcemap: false }, plugins },
-  { input: 'src/options.ts', output: { file: 'dist/options.js', format: 'iife', sourcemap: false }, plugins }
+  { input: 'src/options.ts', output: { file: 'dist/options.js', format: 'iife', sourcemap: false }, plugins },
+  { input: 'src/background-entry.ts', output: { file: 'dist/background.js', format: 'iife', sourcemap: false }, plugins }
 ];

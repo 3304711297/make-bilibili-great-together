@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "src/entry.ts",
   "scripts": {
     "build": "rollup -c rollup.config.ts --configPlugin @rollup/plugin-typescript",
-    "test": "echo \"no unit tests in userscript package\" && exit 0",
+    "test": "vitest run",
     "lint": "eslint src"
   },
   "dependencies": { "@mbgt/core": "workspace:*" },
@@ -16,6 +17,7 @@
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-replace": "^6.0.0",
     "tslib": "^2.6.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
   }
 }

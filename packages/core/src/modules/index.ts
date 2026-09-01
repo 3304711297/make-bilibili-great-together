@@ -17,8 +17,9 @@ import playerVideoFit from './player-video-fit';
 import removeBlackBackdropFilter from './remove-black-backdrop-filter';
 import removeUselessUrlParams from './remove-useless-url-params';
 import useSystemFonts from './use-system-fonts';
+import type { CdnUtilHooks } from '../utils/get-cdn-url';
 
-export function getDefaultModules(logger: Logger): ModuleMeta[] {
+export function getDefaultModules(logger: Logger, options?: { cdnHooksRef?: { current?: CdnUtilHooks } }): ModuleMeta[] {
   return [
     defuseStorage(logger),
     defuseSpyware(logger),
@@ -27,7 +28,7 @@ export function getDefaultModules(logger: Logger): ModuleMeta[] {
     fixCopyInCV(logger),
     forceEnable4K(logger),
     noAd(logger),
-    noP2P(logger),
+    noP2P(logger, options?.cdnHooksRef),
     noWebRTC(logger),
     optimizeHomepage(logger),
     optimizeStory(logger),
