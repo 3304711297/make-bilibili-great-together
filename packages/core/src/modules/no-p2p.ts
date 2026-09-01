@@ -41,6 +41,9 @@ export default function noP2P(logger: Logger, cdnHooksRef?: { current?: CdnUtilH
   // 故改为工厂作用域内持有一个 createCDNUtil(logger) 实例（每次 getDefaultModules 调用各创建一次）
   const cdnUtil = createCDNUtil(logger, cdnHooksRef);
 
+  // 把 cdnUtil 回填给接线层：扩展形态 probe 晚挂载时经 replayPendingProbe 补探首载候选
+  if (cdnHooksRef) cdnHooksRef.current = { ...(cdnHooksRef.current ?? {}), cdnUtil: { replayPendingProbe: () => cdnUtil.replayPendingProbe() } };
+
   // 统计埋点：只在 URL 实际被改写时计数（包装不改变替换语义与错误路径）
   const replaceCdnUrl = (url: string | URL, meta: string): string => {
     const out = cdnUtil.getReplacementCdnUrl(url, meta);

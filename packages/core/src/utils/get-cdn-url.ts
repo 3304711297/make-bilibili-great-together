@@ -21,6 +21,8 @@ import { split0th } from 'foxts/split-nth';
 export interface CdnUtilHooks {
   /** 懒挂载的探测实例（接线层异步读取设置后回填，见 Plan 4 Task 6） */
   probe?: CdnProbe;
+  /** noP2P 工厂回填：接线层 probe 后挂时调用 replayPendingProbe 补探首载候选 */
+  cdnUtil?: { replayPendingProbe(): void };
 }
 
 const PROXY_TF = 'proxy-tf-all-ws.bilivideo.com';
@@ -70,6 +72,9 @@ export function createCDNUtil(logger: Logger, hooksRef?: { current?: CdnUtilHook
   const bcache_type_upgcxcode_hosts = new Set<string>();
 
   const cdnDatas = flru<CdnUrlData>(200);
+
+  // 冻结#1：只保留最新一次未探测输入（覆盖式）；replay 先清后探（幂等）
+  let pendingProbe: { hosts: string[]; sampleUrl: string } | null = null;
 
   return {
     saveAndParsePlayerInfo(json: object, meta: string) {
@@ -125,14 +130,22 @@ export function createCDNUtil(logger: Logger, hooksRef?: { current?: CdnUtilHook
 
       logger.warn('No matching CDN URL Group found! Opt-in basic P2P replacement', { meta, url: urlObj.href, key });
       return basicP2PReplacement(typeof url === 'string' ? new URL(url) : url, meta);
+    },
+    replayPendingProbe() {
+      const probe = hooksRef?.current?.probe;
+      if (!probe || !pendingProbe) return;
+      const pending = pendingProbe;
+      pendingProbe = null; // 先清后探：幂等
+      probe.ensureProbe(pending.hosts, pending.sampleUrl);
     }
   };
 
   // upgcxcode 路径/签名跨镜像宿主可互换：探测缓存有效时固定换到最优宿主，否则回退上游随机
-  function selectMirrorUrl(candidates: string[], incomingUrl: string | URL): string {
+  // C 项加固：scheme/port 恒取候选 URL（收集期已 https 化），不继承 incoming——http incoming 不产 http 镜像
+  function selectMirrorUrl(candidates: string[], _incomingUrl: string | URL): string {
     const best = hooksRef?.current?.probe?.getBestHost();
     if (best) {
-      const url = new URL(typeof incomingUrl === 'string' ? incomingUrl : incomingUrl.href);
+      const url = new URL(pickOne(candidates));
       url.hostname = best.host;
       return url.href;
     }
@@ -382,8 +395,10 @@ export function createCDNUtil(logger: Logger, hooksRef?: { current?: CdnUtilHook
       });
 
       const probe = hooksRef?.current?.probe;
-      if (probe && mirror_urls.size > 0) {
-        probe.ensureProbe(Array.from(mirror_type_upgcxcode_hosts), Array.from(mirror_urls)[0]);
+      if (mirror_urls.size > 0) {
+        const input = { hosts: Array.from(mirror_type_upgcxcode_hosts), sampleUrl: Array.from(mirror_urls)[0] };
+        if (probe) probe.ensureProbe(input.hosts, input.sampleUrl);
+        else pendingProbe = input; // probe 未挂载（扩展首跳）：覆盖式记 pending，回填后 replay
       }
     }
   }

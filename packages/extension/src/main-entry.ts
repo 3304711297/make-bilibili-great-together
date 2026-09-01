@@ -46,7 +46,8 @@ startCompatProbe({
 void (async () => {
   const settings = await readSettingsWithBudget(store, allModules.map(m => m.name));
   if (settings.cdnProbe) {
-    cdnHooksRef.current = { probe: createCdnProbe({ fetchLike: createBridgedProbeFetch(eventTarget), logger, store }) };
+    cdnHooksRef.current = { ...(cdnHooksRef.current ?? {}), probe: createCdnProbe({ fetchLike: createBridgedProbeFetch(eventTarget), logger, store }) };
+    cdnHooksRef.current?.cdnUtil?.replayPendingProbe();
   }
   try { startStatsFlush(store); } catch (e) { logger.warn('stats flush start failed', e); }
   if (settings.statsBadge) {
