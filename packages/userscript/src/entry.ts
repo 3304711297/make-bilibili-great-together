@@ -1,26 +1,86 @@
-import { createCore, createLogger, getDefaultModules } from '@mbgt/core';
-import type { ModuleMeta } from '@mbgt/core';
+import {
+  createCore,
+  createLogger,
+  getDefaultModules,
+  startCompatProbe,
+  resolveConflicts,
+  readForceOnOverrides,
+  COMPAT_STATUS_KEY
+} from '@mbgt/core';
 import { unsafeConsole, unsafeWindowRef } from './gm-adapter';
 import { initModuleMenu, getModuleEnabledSync } from './module-menu';
+import { createGMKVStore } from './gm-storage';
 
 const logger = createLogger(unsafeConsole());
-
-// 先注册菜单（含当前处于禁用态的模块，允许再次开启）
+const store = createGMKVStore();
 const allModules = getDefaultModules(logger);
+
+// 全部 15 个模块的菜单都要注册且只注册一次（禁用态也能在菜单里切回来）
 for (const mod of allModules) {
   initModuleMenu(mod);
 }
 
-// document-start 同步过滤：开关持久化于菜单点击时（GM_setValue），刷新后此处生效
-const modules: ModuleMeta[] = allModules.filter(m => getModuleEnabledSync(m));
-for (const mod of allModules) {
-  if (!modules.includes(mod)) {
+// 立即注册：无冲突声明且菜单启用的模块（document-start 语义）
+const immediate = allModules.filter(m => !m.conflicts?.length);
+const enabledImmediate = immediate.filter(m => getModuleEnabledSync(m.name));
+for (const mod of immediate) {
+  if (!getModuleEnabledSync(mod.name)) {
     logger.log(`[${mod.name}] disabled via menu -- skipping`);
   }
 }
 
-createCore({
-  modules,
+const core = createCore({
+  modules: enabledImmediate,
   console: unsafeConsole(),
   unsafeWindow: unsafeWindowRef
+});
+
+// 延迟注册：带 conflicts 的模块，等共存探测结算
+const deferred = allModules.filter(m => m.conflicts?.length);
+const menuDisabledNames = new Set(
+  deferred.filter(m => !getModuleEnabledSync(m.name)).map(m => m.name)
+);
+
+startCompatProbe({
+  snapshot: () => {
+    // DOM 查询（真实实现）：#bewly 家族 + 特征标记；shadow DOM 为 open 模式可直查
+    const doc = unsafeWindowRef.document;
+    const hosts = Array.from(doc.querySelectorAll<HTMLElement>('#bewly[data-version]'));
+    if (hosts.length === 0) return null;
+    const extensions: { id: 'bewlycat' | 'avemujica'; version: string | null }[] = [];
+    const whole = doc.documentElement;
+    const hasBewlyCatMarker = whole.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null
+      || hosts.some(h => h.shadowRoot?.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null);
+    const hasAveMujicaMarker = whole.querySelector('#bewly-bottom-comment-style') !== null
+      || hosts.some(h => h.shadowRoot?.querySelector('#bewly-bottom-comment-style') !== null);
+    if (hasBewlyCatMarker) extensions.push({ id: 'bewlycat', version: hosts[0]?.getAttribute('data-version') ?? null });
+    if (hasAveMujicaMarker) extensions.push({ id: 'avemujica', version: hosts[0]?.getAttribute('data-version') ?? null });
+    // 三态契约：特征命中→完整结果；家族在场特征未现→pending-family（保持轮询，超时后 generic）；无家族→null
+    if (extensions.length > 0) return { family: 'bewly' as const, extensions, generic: false };
+    return 'pending-family';
+  },
+  scheduler: (cb, ms) => {
+    const t = unsafeWindowRef.setTimeout(cb, ms);
+    return () => unsafeWindowRef.clearTimeout(t);
+  },
+  timeoutMs: 10_000,
+  intervalMs: 200,
+  onSettle: (probe) => {
+    // 结算单次性由 startCompatProbe 保证：此处只触发一次 registerModules，不重复注册
+    void (async () => {
+      const overrides = await readForceOnOverrides(store, deferred.map(m => m.name));
+      const { enabled, autoDisabled } = resolveConflicts(deferred, probe, menuDisabledNames, overrides);
+      for (const d of autoDisabled) {
+        logger.log(`[${d.module}] auto-disabled: ${d.extension} (${d.feature}) detected`);
+      }
+      core.registerModules(enabled);
+      await store.set(COMPAT_STATUS_KEY, {
+        family: probe.family,
+        extensions: probe.extensions.map(e => e.id),
+        generic: probe.generic,
+        autoDisabled,
+        settledAt: Date.now()
+      });
+    })();
+  }
 });
