@@ -57,14 +57,16 @@ export async function loadPanelData(store: KVStore, moduleNames: string[]): Prom
 const PANEL_STYLE = `
 #mbgt-panel-chip{position:fixed;right:12px;bottom:64px;z-index:2147483000;font:12px/1.4 system-ui,sans-serif;
   background:rgba(20,20,20,.85);color:#fff;padding:6px 10px;border-radius:999px;cursor:pointer}
-#mbgt-panel-root{position:fixed;right:12px;bottom:96px;z-index:2147483000;width:340px;max-height:70vh;overflow:auto;
+/* 面板根用 class（.mbgt-panel-root）而非 id：id 'mbgt-panel-root' 保留给浮层挂载容器，
+   避免与 PanelApp 渲染出的根 div 冲突；PANEL_STYLE 仅浮层形态注入，options 页用自己的样式 */
+.mbgt-panel-root{position:fixed;right:12px;bottom:96px;z-index:2147483000;width:340px;max-height:70vh;overflow:auto;
   background:#fff;color:#222;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.25);font:13px/1.6 system-ui,sans-serif;padding:12px}
-#mbgt-panel-root h4{margin:10px 0 4px;font-size:13px}
-#mbgt-panel-root .mbgt-row{display:flex;align-items:flex-start;gap:8px;padding:4px 0}
-#mbgt-panel-root .mbgt-reason{color:#a00;font-size:12px}
-#mbgt-panel-root .mbgt-muted{color:#777;font-size:12px}
-#mbgt-panel-root .mbgt-btn{cursor:pointer;margin-right:6px}
-#mbgt-panel-root textarea{width:100%;height:80px;font:12px monospace}
+.mbgt-panel-root h4{margin:10px 0 4px;font-size:13px}
+.mbgt-panel-root .mbgt-row{display:flex;align-items:flex-start;gap:8px;padding:4px 0}
+.mbgt-panel-root .mbgt-reason{color:#a00;font-size:12px}
+.mbgt-panel-root .mbgt-muted{color:#777;font-size:12px}
+.mbgt-panel-root .mbgt-btn{cursor:pointer;margin-right:6px}
+.mbgt-panel-root textarea{width:100%;height:80px;font:12px monospace}
 `;
 
 export function PanelApp(props: { store: KVStore; modules: ModuleInfo[] }) {
@@ -108,7 +110,7 @@ export function PanelApp(props: { store: KVStore; modules: ModuleInfo[] }) {
     } catch (e) { console.warn('[mbgt] panel write failed', e); }
   };
 
-  return h('div', { id: 'mbgt-panel-root' },
+  return h('div', { className: 'mbgt-panel-root' },
     // ── 模块开关 ──
     h('h4', null, `模块开关（${modules.length}）`),
     h('div', { className: 'mbgt-muted' }, '勾选=启用，取消=关闭；被自动停用的模块勾选即强制开启；重启页面生效'),

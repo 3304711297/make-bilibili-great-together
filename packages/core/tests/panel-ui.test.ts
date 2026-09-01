@@ -41,6 +41,28 @@ describe('PanelApp 交互', () => {
   });
 });
 
+// options 形态：挂载壳直渲染 PanelApp（无浮层容器/无 PANEL_STYLE），锁定模块复选框禁用
+describe('PanelApp options 形态', () => {
+  it('直接渲染进页面容器：locked 模块禁用不可关，deferred 模块可切换', async () => {
+    const store = createMemoryKVStore();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const optionsModules = [
+      { name: 'defuse-spyware', description: '反跟踪', locked: true },
+      { name: 'no-ad', description: '去广告' }
+    ];
+    render(h(PanelApp, { store, modules: optionsModules }) as any, container);
+    await new Promise(r => setTimeout(r, 10)); // 等异步 load
+    const locked = container.querySelector<HTMLInputElement>('input[data-module="defuse-spyware"]')!;
+    expect(locked.disabled).toBe(true);
+    const deferred = container.querySelector<HTMLInputElement>('input[data-module="no-ad"]')!;
+    expect(deferred.disabled).toBe(false);
+    deferred.click();
+    await new Promise(r => setTimeout(r, 10));
+    expect(await store.get(`${OVERRIDE_PREFIX}no-ad`)).toBe('off');
+  });
+});
+
 describe('mountFloatingPanel', () => {
   it('入口胶囊存在且不抛错（降级原则）', () => {
     mountFloatingPanel({ store: createMemoryKVStore(), modules });
