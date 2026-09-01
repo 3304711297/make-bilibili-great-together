@@ -50,6 +50,9 @@ void (async () => {
   }
   try { startStatsFlush(store); } catch (e) { logger.warn('stats flush start failed', e); }
   if (settings.statsBadge) {
-    try { mountStatsBadge({ store }); } catch { /* 降级 */ }
+    // 角标需 DOM 就绪（对齐 userscript 侧守卫）；body 未就绪时挂到 DOMContentLoaded 后
+    const mountBadge = () => { try { mountStatsBadge({ store }); } catch { /* 降级 */ } };
+    if (document.body) mountBadge();
+    else document.addEventListener('DOMContentLoaded', mountBadge, { once: true });
   }
 })().catch((e) => logger.warn('mbgt settings backfill failed', e));

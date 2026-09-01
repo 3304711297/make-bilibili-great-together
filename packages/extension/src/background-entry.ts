@@ -29,8 +29,10 @@ try {
         const stored = await api.storage.local.get(DNR_STATS_KEY);
         const storedCounts = (stored[DNR_STATS_KEY] as DnrStatsPayload | undefined)?.counts ?? {};
         const counts = mergeDnrCounts(storedCounts, baseline, session);
-        baseline = { ...session };
         await api.storage.local.set({ [DNR_STATS_KEY]: { counts, updatedAt: now } });
+        // 写盘成功后才推进 baseline（对齐 core stats/registry 的 T2 裁定）：set 抛错时本轮内存
+        // 增量保留在下轮 session 里重试合并——代价是失败轮重复计数，优于直接丢一批增量
+        baseline = { ...session };
       })().catch(() => { /* 落盘失败不影响后续计数 */ });
     } catch { /* 事件解析异常忽略 */ }
   });
