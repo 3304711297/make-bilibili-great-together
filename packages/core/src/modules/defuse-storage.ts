@@ -1,6 +1,7 @@
 // Ported from SukkaW/Make-Bilibili-Great-Than-Ever-Before (MIT) © SukkaW
 import type { ModuleMeta } from '../types';
 import type { Logger } from '../logger';
+import { recordInterception } from '../features/stats/registry';
 import {
   indexedDB as mockIndexedDB
 } from 'fake-indexeddb';
@@ -53,6 +54,7 @@ export default function defuseStorage(logger: Logger): ModuleMeta {
             keys.push(key);
 
             if (defusedPattern(key)) {
+              recordInterception('storage-defused');
               if (process.env.DEBUG) {
                 logger.trace('localStorage.setItem mocked:', { key, value });
               } else {
@@ -67,6 +69,7 @@ export default function defuseStorage(logger: Logger): ModuleMeta {
           },
           getItem(key) {
             if (defusedPattern(key)) {
+              recordInterception('storage-defused');
               const value = store.has(key) ? store.get(key)! : null;
 
               if (process.env.DEBUG) {
@@ -88,6 +91,7 @@ export default function defuseStorage(logger: Logger): ModuleMeta {
             }
 
             if (defusedPattern(key)) {
+              recordInterception('storage-defused');
               if (process.env.DEBUG) {
                 logger.trace('localStorage.removeItem mocked:', { key });
               } else {

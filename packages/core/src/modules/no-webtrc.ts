@@ -4,6 +4,7 @@ import type { Noop } from 'foxts/noop';
 import type { ModuleMeta } from '../types';
 import type { Logger } from '../logger';
 import { defineReadonlyProperty } from '../utils/define-readonly-property';
+import { recordInterception } from '../features/stats/registry';
 
 const neverResolvedPromise = new Promise(noop);
 const noopNeverResolvedPromise = () => neverResolvedPromise;
@@ -99,6 +100,10 @@ export default function noWebRTC(_logger: Logger): ModuleMeta {
       });
 
       class MockRTCPeerConnection implements Pick<RTCPeerConnection, 'close' | 'createDataChannel' | 'createOffer' | 'setRemoteDescription' | 'addEventListener' | 'removeEventListener' | 'addIceCandidate' | 'setLocalDescription' | 'setConfiguration' | 'localDescription' | 'createAnswer' | 'onicecandidate'> {
+        constructor() {
+          recordInterception('rtc-mocked');
+        }
+
         createDataChannel() {
           return new MockDataChannel() as RTCDataChannel;
         }
