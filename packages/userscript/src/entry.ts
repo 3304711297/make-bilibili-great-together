@@ -49,14 +49,16 @@ startCompatProbe({
     if (hosts.length === 0) return null;
     const extensions: { id: 'bewlycat' | 'avemujica'; version: string | null }[] = [];
     const whole = doc.documentElement;
+    // BewlyCat 标记：播放器/稍后再看补间（1.6.9 与 main 均存在，瞬时出现，轮询可捕获）
     const hasBewlyCatMarker = whole.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null
       || hosts.some(h => h.shadowRoot?.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null);
-    const hasAveMujicaMarker = whole.querySelector('#bewly-bottom-comment-style') !== null
-      || hosts.some(h => h.shadowRoot?.querySelector('#bewly-bottom-comment-style') !== null);
+    // 真机冒烟（2026-09-01）发现 #bewly-bottom-comment-style 并非 AveMujica 独有：
+    // BewlyCat 1.6.9 初始化时也会瞬时注入该 id，会误判为"双扩展在场"走并集。
+    // 在找到版本稳定的 AveMujica 独有标记前不做 avemujica 精确识别——
+    // AveMujica 单独在场时走 pending-family→超时 generic（保守并集，禁用结果一致）。
     // 共用 #bewly[data-version] 挂载点：BewlyCat 命中时取 hosts[0] 版本——单扩展场景正确，
-    // 同页多宿主时非精确（version 精确化留给 Plan 4）；AveMujica 命中时置 null：诚实优于误取 Bewly 系版本
+    // 同页多宿主时非精确（version 精确化留给 Plan 4）
     if (hasBewlyCatMarker) extensions.push({ id: 'bewlycat', version: hosts[0]?.getAttribute('data-version') ?? null });
-    if (hasAveMujicaMarker) extensions.push({ id: 'avemujica', version: null });
     // 三态契约：特征命中→完整结果；家族在场特征未现→pending-family（保持轮询，超时后 generic）；无家族→null
     if (extensions.length > 0) return { family: 'bewly' as const, extensions, generic: false };
     return 'pending-family';
