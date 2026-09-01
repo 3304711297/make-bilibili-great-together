@@ -29,7 +29,7 @@ export function resolveConflicts(
   const autoDisabled: { module: string; extension: string; feature: string }[] = [];
 
   // 生效的冲突行：specific 扩展各自一行；generic 取两行并集（同模块 bewlycat 行优先）
-  const activeRows: Record<string, { extension: ExtensionId; feature: string }>[] = [];
+  const activeRows: Record<string, { extension: string; feature: string }>[] = [];
   const specific = probe.extensions.map(e => e.id);
   if (probe.generic) {
     // generic：保守并集（specific 为空且非 generic 时不启用任何冲突行，全部照常启用）
@@ -61,10 +61,16 @@ function rowOf(id: ExtensionId): Record<string, { extension: ExtensionId; featur
   return out;
 }
 
-function mergedRow(): Record<string, { extension: ExtensionId; feature: string }> {
-  const out = rowOf('avemujica');
+// generic（家族在场但无法区分具体扩展）路径的归因统一标 'generic'：
+// 真机冒烟（2026-09-01）确认首页上 BewlyCat 标记为瞬态、常轮询不到而落入本路径，
+// 若沿用 avemujica/bewlycat 行归属，日志与状态里会出现"只装了 BewlyCat 却显示 avemujica"的误导
+function mergedRow(): Record<string, { extension: string; feature: string }> {
+  const out: Record<string, { extension: string; feature: string }> = {};
   for (const [modName, feature] of Object.entries(CONFLICT_TABLE.bewlycat)) {
-    out[modName] = { extension: 'bewlycat', feature };
+    out[modName] = { extension: 'generic', feature };
+  }
+  for (const [modName, feature] of Object.entries(CONFLICT_TABLE.avemujica)) {
+    if (out[modName] === undefined) out[modName] = { extension: 'generic', feature };
   }
   return out;
 }
