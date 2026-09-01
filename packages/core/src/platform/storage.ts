@@ -87,6 +87,8 @@ export async function readSettingsWithBudget(
     ]);
     return { overrides, cdnProbe, statsBadge };
   })();
+  // 竞速超时获胜后，read 仍可能在后完成/拒绝——附着 catch 避免 unhandled rejection
+  read.catch(() => {});
   try {
     return await Promise.race([
       read,

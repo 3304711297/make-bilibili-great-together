@@ -2,7 +2,7 @@ import './unsafe-shim';
 import {
   createCore, createLogger, getDefaultModules, startCompatProbe, resolveConflicts,
   COMPAT_STATUS_KEY, createBewlyFamilySnapshot, createBridgedKVStore, createBridgedProbeFetch,
-  createCdnProbe, readSettingsWithBudget, type CdnUtilHooks
+  createCdnProbe, readSettingsWithBudget, startStatsFlush, mountStatsBadge, type CdnUtilHooks
 } from '@mbgt/core';
 
 const logger = createLogger(console);
@@ -42,10 +42,14 @@ startCompatProbe({
   }
 });
 
-// 设置回填：probe 挂载 + 统计角标（Task 7 mountStatsBadge 在 Task 9 接入；此处先落 cdnHooksRef）
+// 设置回填：probe 挂载 + 统计 flush + 统计角标（Task 9 接线收口；页内浮层面板不挂——面板入口=工具栏 options 页，见 Task 10）
 void (async () => {
   const settings = await readSettingsWithBudget(store, allModules.map(m => m.name));
   if (settings.cdnProbe) {
     cdnHooksRef.current = { probe: createCdnProbe({ fetchLike: createBridgedProbeFetch(eventTarget), logger, store }) };
+  }
+  try { startStatsFlush(store); } catch (e) { logger.warn('stats flush start failed', e); }
+  if (settings.statsBadge) {
+    try { mountStatsBadge({ store }); } catch { /* 降级 */ }
   }
 })().catch((e) => logger.warn('mbgt settings backfill failed', e));
