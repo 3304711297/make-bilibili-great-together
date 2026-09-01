@@ -19,4 +19,8 @@ export {
   type ProbeFetch, type CdnProbeResult, type CdnProbeStatus, type CdnProbe, createCdnProbe
 } from './features/cdn-probe/probe';
 export type { CdnUtilHooks } from './utils/get-cdn-url';
+export {
+  buildModuleRows, STATS_LABELS, buildStatsView, filterExportableKeys, validateImportPayload,
+  type ModuleRow
+} from './features/panel/model';
 export const MBGT_VERSION = '0.1.0';
