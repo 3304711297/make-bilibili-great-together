@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { PanelApp, mountFloatingPanel, loadPanelData } from '../src/features/panel/panel';
 import { h, render } from 'preact';
 import { createMemoryKVStore } from '../src/platform/storage';
@@ -67,5 +67,36 @@ describe('mountFloatingPanel', () => {
   it('入口胶囊存在且不抛错（降级原则）', () => {
     mountFloatingPanel({ store: createMemoryKVStore(), modules });
     expect(document.getElementById('mbgt-panel-chip')).not.toBe(null);
+  });
+});
+
+describe('面板 2s 轮询（Plan 5）', () => {
+  it('打开期间每 2s 刷新；关闭后停止；读失败保留旧数据', async () => {
+    vi.useFakeTimers();
+    const store = createMemoryKVStore();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    let gets = 0;
+    const origGet = store.get.bind(store);
+    (store as any).get = async (k: string) => { gets++; return origGet(k); };
+    render(h(PanelApp, { store, modules }) as any, container);
+    const loadOnce = () => gets; // 一次 loadPanelData = 7 次 get
+    await vi.advanceTimersByTimeAsync(20);
+    const afterOpen = loadOnce();
+    expect(afterOpen).toBeGreaterThan(0);
+    await vi.advanceTimersByTimeAsync(2_100);
+    const afterTick1 = loadOnce();
+    expect(afterTick1).toBeGreaterThan(afterOpen); // 2s 后自动刷新
+    // 读失败：get 抛错后 UI 保留旧数据（不清空），下一轮继续
+    (store as any).get = async () => { throw new Error('boom'); };
+    await vi.advanceTimersByTimeAsync(2_100);
+    expect(container.textContent).toContain('模块开关');
+    // 关闭：render(null) 卸载 → cleanup 停止轮询（数值快照断言，非函数引用）
+    const frozenCount = gets;
+    render(null as any, container);
+    (store as any).get = async (k: string) => { gets++; return origGet(k); };
+    await vi.advanceTimersByTimeAsync(6_000);
+    expect(gets).toBe(frozenCount); // 关闭后零调用
+    vi.useRealTimers();
   });
 });

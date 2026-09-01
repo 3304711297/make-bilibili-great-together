@@ -2,8 +2,18 @@
 // 基线 = mount 时读到的持久计数；实时增量经 onInterception 监听。挂载失败只损失可视化（降级原则）。
 import type { KVStore } from '../../platform/storage';
 import { onInterception, readStats, sessionCounts } from './registry';
+import { foldDnrCounts, DNR_STATS_KEY, type DnrStatsPayload } from './dnr';
 
 const BADGE_ID = 'mbgt-stats-badge';
+
+/** 角标/面板同口径持久基线：content 统计 + DNR（归并为 'dnr'）。T1 数据入口，T4 的 30s 重读复用。 */
+export async function readBadgeBaseline(store: KVStore): Promise<Record<string, number>> {
+  const [stats, dnr] = await Promise.all([
+    readStats(store),
+    store.get<DnrStatsPayload>(DNR_STATS_KEY)
+  ]);
+  return { ...stats.counts, ...foldDnrCounts(dnr?.counts ?? {}) };
+}
 
 const BADGE_STYLE = `
 #${BADGE_ID}{position:fixed;right:12px;bottom:12px;z-index:2147483000;font:12px/1.4 system-ui,sans-serif;
@@ -49,10 +59,18 @@ export function mountStatsBadge(opts: { store: KVStore }): (() => void) | null {
     };
 
     const off = onInterception(() => render());
-    void readStats(opts.store).then(stored => {
-      baselineCounts = stored.counts;
+    void readBadgeBaseline(opts.store).then(base => {
+      baselineCounts = base;
       render();
     }).catch(() => { /* 基线读取失败仍可显示会话计数 */ });
+    // Plan 5 §3：30s 低频重读持久基线（含 DNR，同口径最终一致）；叠加当前会话未归档增量，不覆盖实时计数
+    const baselineTimer = setInterval(() => {
+      void readBadgeBaseline(opts.store).then(base => {
+        if (destroyed) return;
+        baselineCounts = base;
+        render();
+      }).catch(() => { /* 重读失败保持上次基线 */ });
+    }, 30_000);
 
     chip.addEventListener('click', () => chip.classList.toggle('open'));
     render();
@@ -61,6 +79,7 @@ export function mountStatsBadge(opts: { store: KVStore }): (() => void) | null {
 
     return () => {
       destroyed = true;
+      clearInterval(baselineTimer);
       off();
       chip.remove();
       style.remove();
