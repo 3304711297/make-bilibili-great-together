@@ -17,6 +17,11 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+      - name: 扩展产物断言
+        run: |
+          test -f packages/extension/dist/manifest.json
+          test -f packages/extension/dist/main.js
+          test -f packages/extension/make-bilibili-great-together-extension.zip
       - name: 产物冒烟
         run: |
           test -f packages/userscript/dist/make-bilibili-great-together.user.js

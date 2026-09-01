@@ -12,6 +12,10 @@ GitHub Releases 直链（发版后可用）或 jsDelivr：`https://cdn.jsdelivr.
 
 > 发版前获取方式：Releases 尚无产物时，请 clone 本仓库后本地构建：`pnpm install && pnpm build`，产物在 `packages/userscript/dist/`。
 
+## 安装（扩展）
+
+Releases 下载 `make-bilibili-great-together-extension.zip` 解压（或本地构建 `pnpm --filter @mbgt/extension build`），`edge://extensions` 开启开发人员模式后拖入文件夹或 zip。扩展与 userscript 二选一即可（功能相同，扩展额外在网络层用 declarativeNetRequest 拦截上报）。
+
 ## 与扩展共存
 
 安装 [BewlyCat](https://github.com/keleus/BewlyCat) / [BewlyBewly! AveMujica](https://github.com/VentusUta/BewlyBewly-AveMujica) 后，脚本自动探测并停用与其重复的模块（首页广告、URL 参数清理、字体、播放器适配等），网络层能力（反跟踪、反 PCDN/P2P）不受影响。
