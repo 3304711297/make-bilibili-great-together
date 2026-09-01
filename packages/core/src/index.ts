@@ -6,4 +6,5 @@ export { ErrorCounter } from './utils/error-counter';
 export { createMemoryKVStore, readForceOnOverrides, OVERRIDE_PREFIX, COMPAT_STATUS_KEY, type KVStore, type CompatStatus } from './platform/storage';
 export { startCompatProbe, type ExtensionId, type DetectedExtension, type ProbeResult, type SnapshotResult, type CompatProbeOptions } from './platform/compat-types';
 export { CONFLICT_TABLE, resolveConflicts } from './features/compat/resolve';
+export { createBewlyFamilySnapshot, type BewlySnapshotOptions } from './features/compat/snapshot';
 export const MBGT_VERSION = '0.1.0';
