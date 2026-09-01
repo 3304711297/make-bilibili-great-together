@@ -14,7 +14,12 @@ GitHub Releases 直链（发版后可用）或 jsDelivr：`https://cdn.jsdelivr.
 
 ## 与扩展共存
 
-安装 BewlyCat / AveMujica 时，重复功能模块将自动停用（开发中，见 spec §3）。
+安装 [BewlyCat](https://github.com/keleus/BewlyCat) / [BewlyBewly! AveMujica](https://github.com/VentusUta/BewlyBewly-AveMujica) 后，脚本自动探测并停用与其重复的模块（首页广告、URL 参数清理、字体、播放器适配等），网络层能力（反跟踪、反 PCDN/P2P）不受影响。
+
+- 探测窗口 10 秒；检测到家族但无法区分具体扩展时按保守策略停用并集
+- 被停用的模块会写入控制台日志（`[mbgt] [模块名] auto-disabled: ...`）
+- 强制开启某模块：设置 `GM存储键 mbgt:override:<模块名>` 为 `force-on`（设置面板在后续版本提供）
+- 冲突表中 `optimize-story` 两项为 provisional（待真机实测确认）
 
 ## 致谢
 
