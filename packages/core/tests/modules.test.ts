@@ -142,4 +142,32 @@ describe('getDefaultModules', () => {
     mod.any?.(h);
     expect((globalThis.navigator as any).sendBeacon()).toBe(true);
   });
+
+  it('defuse-storage 的 mock length 读闭包原始 storage，不自引用（真机冒烟回归：视频页炸栈）', () => {
+    // 复现单全局域：bare localStorage 解析到 globalThis 的 storage，而 mock 安装在 unsafeWindow 上。
+    // 若 mock length 误引用 bare localStorage（= globalThis 的 fakeA），读到的将是 2 而非 5；
+    // 修复后应读闭包内 orignalLocalStorage（fakeB，5 条）。
+    const fakeA = fakeStorage();
+    fakeA.setItem('a', '1');
+    fakeA.setItem('b', '2');
+    const fakeB = fakeStorage();
+    for (let i = 0; i < 5; i++) fakeB.setItem(`k${i}`, String(i));
+    vi.stubGlobal('localStorage', fakeA);
+    const uw: Record<string, unknown> = {
+      navigator: { ...(globalThis as any).navigator },
+      indexedDB: { databases: async () => [] },
+      localStorage: fakeB,
+      HTMLMediaElement: class {},
+      MediaSource: class {},
+      location: { href: 'https://www.bilibili.com/' }
+    };
+    vi.stubGlobal('unsafeWindow', uw);
+    const mod = getDefaultModules(logger).find(m => m.name === 'disable-storage')!;
+    const h = { addStyle: vi.fn(), onBeforeFetch: vi.fn(), onXhrOpen: vi.fn(), onXhrResponse: vi.fn(), onResponse: vi.fn(), onlyCallOnce: vi.fn() } as any;
+    mod.any?.(h);
+    const mocked = (uw as any).localStorage;
+    expect(mocked).not.toBe(fakeB); // mock 已装上
+    expect(() => mocked.length).not.toThrow();
+    expect(mocked.length).toBe(5); // store.size(0) + orignal(5)，而非 fakeA 的 2
+  });
 });

@@ -113,7 +113,11 @@ export default function defuseStorage(logger: Logger): ModuleMeta {
             keys.length = 0;
           },
           get length() {
-            return store.size + localStorage.length;
+            // 真机冒烟（2026-09-01）：bare localStorage 在扩展 MAIN world（单全局域）解析到本 mock 自身，
+            // 自引用递归炸栈——视频页 force-enable-4k 钩子首个读 length 即抛 RangeError，
+            // 杀死整个 dispatch 循环（no-p2p/no-webrtc/remove-black-backdrop-filter 全部未执行）。
+            // 必须读闭包内的 orignalLocalStorage。
+            return store.size + orignalLocalStorage.length;
           },
           key(index) {
             const realIndex = keys.length - index - 1;
