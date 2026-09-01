@@ -18,6 +18,7 @@ export interface BewlySnapshotOptions {
  * 共用 #bewly[data-version] 挂载点：BewlyCat 命中时取 hosts[0] 版本——单扩展场景正确，
  * 同页多宿主时非精确（version 精确化留给 Plan 4）。
  * 三态契约：特征命中→完整结果；家族在场特征未现→pending-family（保持轮询，超时后 generic）；无家族→null
+ * doc 契约：doc 需支持 documentElement.querySelector（文档级标记查询）与 querySelectorAll('#bewly[data-version]')（家族宿主查询）
  */
 export function createBewlyFamilySnapshot(doc: Document, options?: BewlySnapshotOptions): () => SnapshotResult {
   const enableAvemujicaMarker = options?.enableAvemujicaCommentStyleMarker === true;
@@ -27,13 +28,15 @@ export function createBewlyFamilySnapshot(doc: Document, options?: BewlySnapshot
     const extensions: { id: ExtensionId; version: string | null }[] = [];
     const whole = doc.documentElement;
     // 行序固定裁定：bewlycat 恒在 avemujica 之前
+    // I1：shadowRoot 判空前置——`h.shadowRoot?.querySelector(sel) !== null` 在 shadowRoot 为 null 时
+    // 因 optional chaining 得 undefined !== null 恒真，会对无 shadowRoot 宿主误归因
     const hasBewlyCatMarker = whole.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null
-      || hosts.some(h => h.shadowRoot?.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null);
+      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null);
     if (hasBewlyCatMarker) extensions.push({ id: 'bewlycat', version: hosts[0]?.getAttribute('data-version') ?? null });
     // 误报治理：#bewly-bottom-comment-style 查询保留在开关守卫分支内（默认不执行）
     if (enableAvemujicaMarker) {
       const hasAvemujicaMarker = whole.querySelector('#bewly-bottom-comment-style') !== null
-        || hosts.some(h => h.shadowRoot?.querySelector('#bewly-bottom-comment-style') !== null);
+        || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector('#bewly-bottom-comment-style') !== null);
       if (hasAvemujicaMarker) extensions.push({ id: 'avemujica', version: null });
     }
     if (extensions.length > 0) return { family: 'bewly' as const, extensions, generic: false };

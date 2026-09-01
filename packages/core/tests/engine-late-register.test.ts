@@ -82,8 +82,7 @@ describe('overrideXHR abort 路径（R1：仍 open，noise 消除）', () => {
     // B 站绑定原始 setRequestHeader 引用，仅 noop 实例属性会残留 InvalidStateError 噪音——
     // open 必须已真正执行（readyState=1 OPENED）
     expect(xhr.readyState).toBe(1);
-    // send/setRequestHeader 为 noop：不产生网络流量
-    expect(() => xhr.send()).not.toThrow();
+    // setRequestHeader 为 noop：不产生网络流量（空洞的 send().not.toThrow() 断言无区分度，已删）
     expect(() => xhr.setRequestHeader('x', 'y')).not.toThrow();
     expect(xhr.readyState).toBe(1); // noop send 不改变状态
   });

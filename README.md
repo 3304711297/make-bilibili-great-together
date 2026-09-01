@@ -14,7 +14,9 @@ GitHub Releases 直链（发版后可用）或 jsDelivr：`https://cdn.jsdelivr.
 
 ## 安装（扩展）
 
-Releases 下载 `make-bilibili-great-together-extension.zip` 解压（或本地构建 `pnpm --filter @mbgt/extension build`），`edge://extensions` 开启开发人员模式后拖入文件夹或 zip。扩展与 userscript 二选一即可（功能相同，扩展额外在网络层用 declarativeNetRequest 拦截上报）。
+Releases 下载 `make-bilibili-great-together-extension.zip` 并**解压**（或本地构建 `pnpm --filter @mbgt/extension build`，产物在 `packages/extension/dist`），然后在浏览器扩展页开启开发人员模式，用"加载解压缩的扩展"按钮选择解压后的目录（Chrome 为 `chrome://extensions`，Edge 为 `edge://extensions`；最低要求 Chromium 111）。
+
+> **请勿与 userscript 形态同时启用**：两种形态都会在页面主世界包装 fetch/XHR，同装会产生双重注入与重复日志。二选一即可。
 
 ## 与扩展共存
 

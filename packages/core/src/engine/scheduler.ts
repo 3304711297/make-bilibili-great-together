@@ -99,8 +99,10 @@ export function createCore(options: CoreOptions): CoreInstance {
       } else {
         const el = doc.createElement('style');
         el.textContent = css;
-        doc.head?.appendChild(el);
-        injectedStyles.add(css); // 同上：append 成功后才标记
+        // head 未就绪时：不执行 appendChild 也不标记——保持可重试语义，该样式下次 flush 重试
+        if (!doc.head) continue;
+        doc.head.appendChild(el);
+        injectedStyles.add(css); // append 成功后才标记
         logger.debug('style tag fallback used');
       }
     }

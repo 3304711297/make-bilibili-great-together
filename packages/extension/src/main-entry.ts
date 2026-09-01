@@ -10,7 +10,11 @@ const store = createBridgedKVStore(globalThis as unknown as EventTarget);
 const allModules = getDefaultModules(logger);
 
 // 扩展形态无油猴菜单：模块默认全启用，override 键（mbgt:override:*）由 options 页写入（Plan 4 完整面板）
-const core = createCore({ modules: allModules, console, unsafeWindow: unsafeWindow });
+// 与 userscript entry 语义对齐：immediate（无 conflicts）进初始 createCore（document-start 语义）；
+// deferred（带 conflicts）不进初始 createCore，探测结算的 registerModules 是其唯一注册点——
+// 否则 compat 停用被架空（带冲突模块已在页面上生效，结算时才被"停用"）
+const immediate = allModules.filter(m => !m.conflicts?.length);
+const core = createCore({ modules: immediate, console, unsafeWindow: unsafeWindow });
 
 const deferred = allModules.filter(m => m.conflicts?.length);
 

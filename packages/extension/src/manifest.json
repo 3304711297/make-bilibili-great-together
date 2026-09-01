@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "Make Bilibili Great Together",
   "version": "0.1.0",
+  "minimum_chrome_version": "111",
   "description": "接手 Make Bilibili Great Than Ever Before：反跟踪、反 PCDN/P2P、CDN 选优，与 BewlyCat/AveMujica 共存感知",
   "permissions": ["storage", "declarativeNetRequest"],
   "host_permissions": ["*://*.bilibili.com/*"],

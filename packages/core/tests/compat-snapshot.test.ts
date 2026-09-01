@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createBewlyFamilySnapshot } from '../src/features/compat/snapshot';
 
-function fakeDoc(hosts: { version: string | null; shadowBewlycat: boolean; shadowAvemujica: boolean }[], docMarkers: { bewlycat: boolean; avemujica: boolean }) {
+function fakeDoc(hosts: { version: string | null; shadowBewlycat: boolean; shadowAvemujica: boolean; noShadowRoot?: boolean }[], docMarkers: { bewlycat: boolean; avemujica: boolean }) {
   const hostEls = hosts.map(h => ({
     getAttribute: (k: string) => (k === 'data-version' ? h.version : null),
-    shadowRoot: {
+    // noShadowRoot=true 时 shadowRoot 为 null：真实宿主可能未 attach（I1 回归面）
+    shadowRoot: h.noShadowRoot ? null : {
       querySelector: (sel: string) =>
         ((sel.includes('bewly-auto-exit-listener') || sel.includes('bewly-watch-later-btn')) && h.shadowBewlycat) ||
         (sel.includes('bewly-bottom-comment-style') && h.shadowAvemujica) ? {} : null
@@ -27,7 +28,7 @@ describe('createBewlyFamilySnapshot（三态契约）', () => {
     expect(snap()).toBeNull();
   });
 
-  it('宿主在场+无标记→pending-family（注意：#bewly-bottom-comment-style 已从标记表移除，见冒烟裁定）', () => {
+  it('宿主在场+无标记命中→pending-family', () => {
     const snap = createBewlyFamilySnapshot(fakeDoc([{ version: '1.6.9', shadowBewlycat: false, shadowAvemujica: false }], { bewlycat: false, avemujica: false }));
     expect(snap()).toBe('pending-family');
   });
@@ -40,6 +41,19 @@ describe('createBewlyFamilySnapshot（三态契约）', () => {
   it('shadowRoot 级标记命中→generic=false', () => {
     const snap = createBewlyFamilySnapshot(fakeDoc([{ version: null, shadowBewlycat: true, shadowAvemujica: false }], { bewlycat: false, avemujica: false }));
     expect(snap()).toEqual({ family: 'bewly', extensions: [{ id: 'bewlycat', version: null }], generic: false });
+  });
+
+  it('shadowRoot 为 null 的宿主：shadow 路径不产生假命中（无文档级标记→pending-family；有文档级标记→正常上报）', () => {
+    // I1 回归：原实现 `h.shadowRoot?.querySelector(sel) !== null` 在 shadowRoot 为 null 时恒真
+    //（optional chaining 得 undefined，undefined !== null 为 true）——无 shadowRoot 宿主会被误归因
+    // shadowBewlycat/shadowAvemujica 标志为 true 表示"若 shadowRoot 存在则命中"，用于证明判空修复
+    const hosts = [{ version: '1.6.9', shadowBewlycat: true, shadowAvemujica: true, noShadowRoot: true }];
+    // 无文档级标记：不得误归因（原实现会因恒真命中报出 bewlycat）
+    const noMarker = createBewlyFamilySnapshot(fakeDoc(hosts, { bewlycat: false, avemujica: false }));
+    expect(noMarker()).toBe('pending-family');
+    // 有文档级 bewlycat 标记：正常上报 bewlycat；且 shadowRoot 路径不产生假命中（avemujica 不因 shadowAvemujica 标志被误报）
+    const withMarker = createBewlyFamilySnapshot(fakeDoc(hosts, { bewlycat: true, avemujica: false }), { enableAvemujicaCommentStyleMarker: true });
+    expect(withMarker()).toEqual({ family: 'bewly', extensions: [{ id: 'bewlycat', version: '1.6.9' }], generic: false });
   });
 
   it('双标记同时在场→extensions 顺序固定 bewlycat 在前（配合行序固定裁定）', () => {
