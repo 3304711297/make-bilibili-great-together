@@ -87,6 +87,8 @@ interface ModuleMeta {
 
 "待实测确认"项在实现阶段用真机验证后定稿。
 
+> 注：optimize-story 两项为 provisional（2026-09-01 标注），待真机装 BewlyCat/AveMujica 实测动态页改造程度后定稿；定稿后更新 CONFLICT_TABLE 与模块 conflicts 元数据（两处 feature 文案需逐字一致）。
+
 ## 4. 点睛功能设计
 
 ### 4.1 CDN 智能选优（`features/cdn-probe`）
