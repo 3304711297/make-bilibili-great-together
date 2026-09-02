@@ -2,11 +2,9 @@
 
 > P2 修复与收尾轮（2026-09-02）归档。原则：本轮顺手优化只进池不实现；任何条目纳入实现前需单独立项。
 
-## 1. AbortController 穿透 `fetchLike` 适配层支持
+## 1. ~~AbortController 穿透 `fetchLike` 适配层支持~~（✅ 2026-09-02 已落地）
 
-- **背景**：CDN probe destroy 语义裁定（plan5 设计文档 §7）明确本轮不引入 AbortController。`fetchLike` 为自定义签名 `(url, timeoutMs) => Promise<{ok, ms}>`，穿透 abort 需要同时修改 userscript（GM_xmlhttpRequest）与扩展（isolated fetch）两侧适配层签名。
-- **收益**：销毁时在途探测可真正取消，而非自然完成后在闸门处丢弃结果。
-- **范围**：`packages/core/src/features/cdn-probe/probe.ts`（签名）、`packages/userscript/src/gm-probe-fetch.ts`、`packages/extension/src/probe-fetch.ts`。
+- **落地**：`ProbeFetch` 增加可选第三参 `AbortSignal`；`runProbe` 每轮建 controller，`destroy()` abort 在途请求；GM 适配层接 `handle.abort()`、扩展适配层并入内部超时 ctrl。destroyed 闸门保留（abort 结算结果照旧丢弃）。回归测试：destroy 触发 AbortSignal。
 
 ## 2. userscript 侧核心纯函数测试覆盖评估
 
