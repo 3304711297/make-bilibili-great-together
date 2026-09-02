@@ -7,18 +7,55 @@ export interface BewlySnapshotOptions {
   enableAvemujicaCommentStyleMarker?: boolean;
 }
 
+const BEWLYCAT_MARKERS = [
+  '[bewly-auto-exit-listener]',
+  '.bewly-watch-later-btn',
+  '[data-bewly-theme]',
+  '.bewly-design',
+  '.bewly-dock',
+  '#bewly-app',
+  '.bewly-header',
+  '.bewly-search-bar',
+  '[data-bewly-version]'
+].join(', ');
+
+const AVEMUJICA_MARKERS = [
+  '.ave-mujica',
+  '.theme-avemujica',
+  '.ave-dock',
+  '.ave-sidebar',
+  '#ave-mujica-app',
+  '[data-ave-theme]',
+  '#ave-font-style',
+  'style[data-theme="ave-mujica"]'
+].join(', ');
+
+/**
+ * 细粒度功能状态探测：检测扩展是否真正在当前页面激活了冲突项
+ */
+function probeActiveFeatures(whole: HTMLElement, hosts: HTMLElement[]): Record<string, boolean> {
+  const query = (sel: string) =>
+    whole.querySelector(sel) !== null ||
+    hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(sel) !== null);
+
+  return {
+    // 首页重构与去广告：检测是否生成了 Bewly 首页组件或隐藏了原生 feed
+    'optimize-homepage': query('#bewly-home, .bewly-home-grid, [data-bewly-page="home"], .bewly-header'),
+    'no-ad': query('#bewly-home, .bewly-home-grid, [data-bewly-page="home"]'),
+    // 自定义字体：检测是否注入了 font-family 全局样式覆盖
+    'use-system-fonts': query('style#bewly-font-style, style#ave-font-style, style[data-font-override]'),
+    // 动态页改造：检测根节点是否被打上 momentsPage 改造标记
+    'optimize-story': whole.classList.contains('momentsPage') || query('.opus-detail-bewly'),
+    // 播放器适配：检测播放器宽屏增强
+    'player-video-fit': query('.bewly-widescreen, [data-bewly-widescreen], .bpx-player-ctrl-bewly-widescreen'),
+    // URL 参数清理
+    'remove-useless-url-params': query('[data-bewly-clean-url]')
+  };
+}
+
 /**
  * 三态 DOM 快照工厂（userscript 与扩展共用）：
- * DOM 查询：#bewly 家族宿主 + 特征标记；shadow DOM 为 open 模式可直查。
- * BewlyCat 标记：播放器/稍后再看补间（1.6.9 与 main 均存在，瞬时出现，轮询可捕获）。
- * 真机冒烟（2026-09-01）发现 #bewly-bottom-comment-style 并非 AveMujica 独有：
- * BewlyCat 1.6.9 初始化时也会瞬时注入该 id，会误判为"双扩展在场"走并集。
- * 默认忽略该标记（enableAvemujicaCommentStyleMarker=false）——AveMujica 单独在场时
- * 走 pending-family→超时 generic（保守并集，禁用结果一致）。
- * 共用 #bewly[data-version] 挂载点：BewlyCat 命中时取 hosts[0] 版本——单扩展场景正确，
- * 同页多宿主时非精确（version 精确化留给 Plan 4）。
- * 三态契约：特征命中→完整结果；家族在场特征未现→pending-family（保持轮询，超时后 generic）；无家族→null
- * doc 契约：doc 需支持 documentElement.querySelector（文档级标记查询）与 querySelectorAll('#bewly[data-version]')（家族宿主查询）
+ * DOM 查询：#bewly 家族宿主 + 多维特征标记；shadow DOM 为 open 模式可直查。
  */
 export function createBewlyFamilySnapshot(doc: Document, options?: BewlySnapshotOptions): () => SnapshotResult {
   const enableAvemujicaMarker = options?.enableAvemujicaCommentStyleMarker === true;
@@ -27,19 +64,26 @@ export function createBewlyFamilySnapshot(doc: Document, options?: BewlySnapshot
     if (hosts.length === 0) return null;
     const extensions: { id: ExtensionId; version: string | null }[] = [];
     const whole = doc.documentElement;
+
     // 行序固定裁定：bewlycat 恒在 avemujica 之前
-    // I1：shadowRoot 判空前置——`h.shadowRoot?.querySelector(sel) !== null` 在 shadowRoot 为 null 时
-    // 因 optional chaining 得 undefined !== null 恒真，会对无 shadowRoot 宿主误归因
-    const hasBewlyCatMarker = whole.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null
-      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector('[bewly-auto-exit-listener], .bewly-watch-later-btn') !== null);
-    if (hasBewlyCatMarker) extensions.push({ id: 'bewlycat', version: hosts[0]?.getAttribute('data-version') ?? null });
-    // 误报治理：#bewly-bottom-comment-style 查询保留在开关守卫分支内（默认不执行）
-    if (enableAvemujicaMarker) {
-      const hasAvemujicaMarker = whole.querySelector('#bewly-bottom-comment-style') !== null
-        || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector('#bewly-bottom-comment-style') !== null);
-      if (hasAvemujicaMarker) extensions.push({ id: 'avemujica', version: null });
+    // I1：shadowRoot 判空前置
+    const hasBewlyCatMarker = whole.querySelector(BEWLYCAT_MARKERS) !== null
+      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(BEWLYCAT_MARKERS) !== null);
+    if (hasBewlyCatMarker) {
+      extensions.push({ id: 'bewlycat', version: hosts[0]?.getAttribute('data-version') ?? null });
     }
-    if (extensions.length > 0) return { family: 'bewly' as const, extensions, generic: false };
+
+    const hasAvemujicaMarker = whole.querySelector(AVEMUJICA_MARKERS) !== null
+      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(AVEMUJICA_MARKERS) !== null)
+      || (enableAvemujicaMarker && (whole.querySelector('#bewly-bottom-comment-style') !== null || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector('#bewly-bottom-comment-style') !== null)));
+    if (hasAvemujicaMarker) {
+      extensions.push({ id: 'avemujica', version: hosts[0]?.getAttribute('data-version') ?? null });
+    }
+
+    if (extensions.length > 0) {
+      const activeFeatures = probeActiveFeatures(whole, hosts);
+      return { family: 'bewly' as const, extensions, generic: false, activeFeatures };
+    }
     return 'pending-family';
   };
 }
