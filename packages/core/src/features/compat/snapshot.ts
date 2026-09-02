@@ -6,24 +6,15 @@ export interface BewlySnapshotOptions {
   enableAvemujicaCommentStyleMarker?: boolean;
 }
 
-// 🐱 BewlyCat 专属多维特征指纹（全页面常驻 + Logo资源 + 仓库链接）
-const BEWLYCAT_MARKERS = [
+// 🐱 层级 1：BewlyCat (keleus) 独占专属特征指纹
+const BEWLYCAT_EXCLUSIVE_MARKERS = [
   'img[src*="logo-cat"]',
   'a[href*="keleus/BewlyCat"]',
-  'a[href*="keleus"]',
-  '[bewly-auto-exit-listener]',
-  '.bewly-watch-later-btn',
-  '[data-bewly-theme]',
-  '.bewly-design',
-  '.bewly-dock',
-  '#bewly-app',
-  '.bewly-header',
-  '.bewly-search-bar',
-  '[data-bewly-version]'
+  'a[href*="keleus"]'
 ].join(', ');
 
-// 🌸 AveMujica 专属多维特征指纹（独占Logo + 作者仓库链接 + 专属主题/侧栏/组件）
-const AVEMUJICA_MARKERS = [
+// 🌸 层级 1：AveMujica (VentusUta) 独占专属特征指纹
+const AVEMUJICA_EXCLUSIVE_MARKERS = [
   'img[src*="bewly-ave-mujica"]',
   'a[href*="VentusUta"]',
   'a[href*="BewlyBewly-AveMujica"]',
@@ -37,32 +28,22 @@ const AVEMUJICA_MARKERS = [
   'style[data-theme="ave-mujica"]'
 ].join(', ');
 
-/**
- * 细粒度功能状态探测：检测扩展是否真正在当前页面激活了冲突项
- */
-function probeActiveFeatures(whole: HTMLElement, hosts: HTMLElement[]): Record<string, boolean> {
-  const query = (sel: string) =>
-    whole.querySelector(sel) !== null ||
-    hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(sel) !== null);
-
-  return {
-    // 首页重构与去广告：检测是否生成了 Bewly 首页组件或隐藏了原生 feed
-    'optimize-homepage': query('#bewly-home, .bewly-home-grid, [data-bewly-page="home"], .bewly-header'),
-    'no-ad': query('#bewly-home, .bewly-home-grid, [data-bewly-page="home"]'),
-    // 自定义字体：检测是否注入了 font-family 全局样式覆盖
-    'use-system-fonts': query('style#bewly-font-style, style#ave-font-style, style[data-font-override]'),
-    // 动态页改造：检测根节点是否被打上 momentsPage 改造标记
-    'optimize-story': whole.classList.contains('momentsPage') || query('.opus-detail-bewly'),
-    // 播放器适配：检测播放器宽屏增强
-    'player-video-fit': query('.bewly-widescreen, [data-bewly-widescreen], .bpx-player-ctrl-bewly-widescreen'),
-    // URL 参数清理
-    'remove-useless-url-params': query('[data-bewly-clean-url]')
-  };
-}
+// 🏠 层级 3：家族通用标记（若无独占指纹且无版本号，作为待定通用宿主）
+const FAMILY_COMMON_MARKERS = [
+  '[bewly-auto-exit-listener]',
+  '.bewly-watch-later-btn',
+  '[data-bewly-theme]',
+  '.bewly-design',
+  '.bewly-dock',
+  '#bewly-app',
+  '.bewly-header',
+  '.bewly-search-bar',
+  '[data-bewly-version]'
+].join(', ');
 
 /**
  * 三态 DOM 快照工厂（userscript 与扩展共用）：
- * DOM 查询：#bewly 家族宿主 + 多维特征标记；shadow DOM 为 open 模式可直查。
+ * DOM 查询：#bewly 家族宿主 + 多维分层特征标记；shadow DOM 为 open 模式可直查。
  */
 export function createBewlyFamilySnapshot(doc: Document, options?: BewlySnapshotOptions): () => SnapshotResult {
   const enableAvemujicaMarker = options?.enableAvemujicaCommentStyleMarker === true;
@@ -73,37 +54,45 @@ export function createBewlyFamilySnapshot(doc: Document, options?: BewlySnapshot
     const whole = doc.documentElement;
     const version = hosts[0]?.getAttribute('data-version') ?? null;
 
-    // 1. 独占指纹匹配
-    const hasBewlyCatMarker = whole.querySelector(BEWLYCAT_MARKERS) !== null
-      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(BEWLYCAT_MARKERS) !== null);
+    // 1. 层级 1：独占专属指纹匹配 (Exclusive Identity Matching)
+    const hasBewlyCatExclusive = whole.querySelector(BEWLYCAT_EXCLUSIVE_MARKERS) !== null
+      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(BEWLYCAT_EXCLUSIVE_MARKERS) !== null);
 
-    const hasAvemujicaMarker = whole.querySelector(AVEMUJICA_MARKERS) !== null
-      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(AVEMUJICA_MARKERS) !== null)
+    const hasAvemujicaExclusive = whole.querySelector(AVEMUJICA_EXCLUSIVE_MARKERS) !== null
+      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(AVEMUJICA_EXCLUSIVE_MARKERS) !== null)
       || (enableAvemujicaMarker && (whole.querySelector('#bewly-bottom-comment-style') !== null || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector('#bewly-bottom-comment-style') !== null)));
 
-    if (hasBewlyCatMarker) {
+    if (hasBewlyCatExclusive) {
       extensions.push({ id: 'bewlycat', version });
     }
 
-    if (hasAvemujicaMarker) {
+    if (hasAvemujicaExclusive) {
       extensions.push({ id: 'avemujica', version });
     }
 
-    // 2. 备用版本号主支启发式判定（当只有宿主而特定 UI 尚未渲染时，防止落入 generic）
+    // 2. 层级 2：版本号主支启发式判定 (Version Heuristics)
+    // 当独占 UI 组件尚未渲染、但宿主带有版本号时，直接按主支号精准锁定扩展
     if (extensions.length === 0 && version) {
       if (version.startsWith('1.8.')) {
-        // AveMujica 版本主支
         extensions.push({ id: 'avemujica', version });
       } else if (version.startsWith('1.7.') || version.startsWith('1.6.')) {
-        // BewlyCat 版本主支
         extensions.push({ id: 'bewlycat', version });
       }
     }
 
+    // 3. 层级 3：若通过独占指纹或版本号已锁定身份
     if (extensions.length > 0) {
-      const activeFeatures = probeActiveFeatures(whole, hosts);
-      return { family: 'bewly' as const, extensions, generic: false, activeFeatures };
+      return { family: 'bewly' as const, extensions, generic: false };
     }
+
+    // 4. 若无独占指纹，检查是否有家族通用组件（若有则为 pending-family 维持轮询，超时走保守 generic）
+    const hasCommonMarker = whole.querySelector(FAMILY_COMMON_MARKERS) !== null
+      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(FAMILY_COMMON_MARKERS) !== null);
+
+    if (hasCommonMarker) {
+      return 'pending-family';
+    }
+
     return 'pending-family';
   };
 }
