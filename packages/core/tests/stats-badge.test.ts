@@ -43,4 +43,24 @@ describe('stats badge', () => {
     vi.useRealTimers();
     destroy();
   });
+
+  it('flush 落盘成功后事件驱动重读基线：badge 立即自愈，不等 30s', async () => {
+    vi.resetModules();
+    const { recordInterception: record, flushStats } = await import('../src/features/stats/registry');
+    const { mountStatsBadge: mount } = await import('../src/features/stats/badge');
+    vi.useFakeTimers();
+    const store = createMemoryKVStore();
+    await store.set('mbgt:stats:counters', { counts: { beacon: 100 }, flushedAt: 1 });
+    const destroy = mount({ store })!;
+    await vi.advanceTimersByTimeAsync(10);
+    expect(document.getElementById('mbgt-stats-badge')!.textContent).toContain('100');
+    record('beacon', 7); // 实时 100+7=107
+    await flushStats(store); // 归零口径：7 落盘、会话归零 → 持久 107
+    await vi.advanceTimersByTimeAsync(0); // 冲刷事件回调的重读微任务
+    record('beacon', 5); // 新拦截触发渲染：应基线 107 + 会话 5 = 112
+    // 低估窗口钉死：无事件机制时基线仍 100 → 105（偏低 7）
+    expect(document.getElementById('mbgt-stats-badge')!.textContent).toContain('112');
+    vi.useRealTimers();
+    destroy();
+  });
 });

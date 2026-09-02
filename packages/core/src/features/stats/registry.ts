@@ -29,6 +29,15 @@ export function sessionCounts(): Record<string, number> {
   return { ...session };
 }
 
+// flush 落盘成功通知（badge 自愈加速）：同上下文的展示层收到后立即重读基线，
+// 消除「落盘完成→30s 重读」窗口内的基线低估。跨上下文（如扩展 DNR 后台写入）仍走 30s 周期重读（冻结#3 最终一致）。
+const flushListeners = new Set<() => void>();
+
+export function onFlush(listener: () => void): () => void {
+  flushListeners.add(listener);
+  return () => { flushListeners.delete(listener); };
+}
+
 let flushing = false;
 
 export async function flushStats(store: KVStore): Promise<void> {
@@ -51,6 +60,9 @@ export async function flushStats(store: KVStore): Promise<void> {
     for (const [kind, v] of Object.entries(delta)) {
       const left = (session[kind] ?? 0) - v;
       if (left > 0) session[kind] = left; else delete session[kind];
+    }
+    for (const l of flushListeners) {
+      try { l(); } catch { /* 监听器异常不影响落盘 */ }
     }
   } catch {
     // 落盘失败：不扣减，增量保留，下轮重试（Plan 4 T2 裁定）
