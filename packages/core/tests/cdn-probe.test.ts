@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createCdnProbe } from '../src/features/cdn-probe/probe';
+import { createCdnProbe, PROBE_CACHE_TTL_MS, REPROBE_DELAY_MS } from '../src/features/cdn-probe/probe';
 import { createLogger } from '../src/logger';
-import { createMemoryKVStore } from '../src/platform/storage';
+import { createMemoryKVStore, type KVStore } from '../src/platform/storage';
 
 const logger = createLogger(console);
 const store = createMemoryKVStore();
@@ -99,5 +99,45 @@ describe('缓存过期主动重探（Plan 5）', () => {
     await vi.advanceTimersByTimeAsync(5 * 60_000 + 60_000);
     expect(fetchLike).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
+  });
+});
+
+describe('destroy 生命周期 race（P2 修复回归）', () => {
+  it('destroy 在途探测 race：无残留落盘、无残留重探 timer、状态不复活', async () => {
+    vi.useFakeTimers();
+    const base = createMemoryKVStore();
+    const setCalls: unknown[] = [];
+    const storeSpy: KVStore = {
+      ...base,
+      set: async (k, v) => {
+        setCalls.push(v);
+        return base.set(k, v);
+      }
+    };
+    let resolveFetch: (r: { ok: boolean; ms: number }) => void = () => {};
+    const fetchLike = vi.fn(() => new Promise<{ ok: boolean; ms: number }>(res => { resolveFetch = res; }));
+    const probe = createCdnProbe({ fetchLike: fetchLike as any, logger, store: storeSpy });
+    probe.ensureProbe(['h1.bilivideo.com'], 'https://h1.bilivideo.com/upgcxcode/x.m4s');
+    // 前置：fetch 在途，状态尚未落
+    expect(probe.getStatus()).toBe(null);
+    // fetch 仍在途时销毁
+    probe.destroy();
+    resolveFetch({ ok: true, ms: 100 });
+    // 冲刷微任务：在途探测自然完成，结果必须被丢弃
+    await vi.advanceTimersByTimeAsync(0);
+    expect(setCalls).toHaveLength(0);
+    // 无残留重探 timer：TTL + 30s + 60s 后不得再发探测
+    await vi.advanceTimersByTimeAsync(PROBE_CACHE_TTL_MS + REPROBE_DELAY_MS + 60_000);
+    expect(fetchLike).toHaveBeenCalledTimes(1);
+    expect(probe.getStatus()).toBe(null);
+    vi.useRealTimers();
+  });
+
+  it('destroy 后 ensureProbe 不复活', () => {
+    const fetchLike = vi.fn(async () => ({ ok: true, ms: 100 }));
+    const probe = createCdnProbe({ fetchLike, logger, store });
+    probe.destroy();
+    probe.ensureProbe(['h1.bilivideo.com'], 'https://h1.bilivideo.com/upgcxcode/x.m4s');
+    expect(fetchLike).toHaveBeenCalledTimes(0);
   });
 });
