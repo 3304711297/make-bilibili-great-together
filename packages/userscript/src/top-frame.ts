@@ -9,3 +9,9 @@ export function isTopFrame(win: { top: unknown }): boolean {
     return false;
   }
 }
+
+/** T7 双形态同装检测（纯函数，可测）：extension 主世界入口置位的全局标记。
+ * 只警告不自动停用（T7 裁定：禁止自动停用/卸载/冲突解决策略）。 */
+export function hasExtensionMarker(win: Record<string, unknown>): boolean {
+  return win.__mbgt_extension_active__ === true;
+}
