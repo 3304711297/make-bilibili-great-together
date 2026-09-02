@@ -1,8 +1,39 @@
 import { describe, it, expect } from 'vitest';
 import {
-  buildModuleRows, buildStatsView, filterExportableKeys, validateImportPayload
+  buildModuleRows, buildStatsView, filterExportableKeys, validateImportPayload, describeAutoDisable
 } from '../src/features/panel/model';
-import type { ModuleOverride } from '../src/platform/storage';
+import type { CompatStatus, ModuleOverride } from '../src/platform/storage';
+
+describe('describeAutoDisable（自动停用说明：识别到什么 + 不建议提示）', () => {
+  const reason = { module: 'optimize-homepage', extension: 'generic', feature: '首页重构' };
+  const compat = (partial: Partial<CompatStatus>): CompatStatus => ({
+    family: 'bewly', extensions: [], generic: true, autoDisabled: [], settledAt: 1, ...partial
+  });
+
+  it('generic 并集：说明检测到家族但无法细分', () => {
+    const text = describeAutoDisable(compat({ generic: true, extensions: ['bewlycat'] }), reason);
+    expect(text).toContain('BewlyCat 家族');
+    expect(text).toContain('无法细分');
+    expect(text).toContain('首页重构');
+  });
+
+  it('specific 命中：说明识别到的具体扩展', () => {
+    const text = describeAutoDisable(compat({ generic: false, extensions: ['avemujica'] }), reason);
+    expect(text).toContain('Ave Mujica');
+    expect(text).not.toContain('无法细分');
+  });
+
+  it('附带「不建议强制开启」提示', () => {
+    const text = describeAutoDisable(compat({}), reason);
+    expect(text).toContain('不建议');
+  });
+
+  it('compat 缺失时降级为通用表述（不抛错）', () => {
+    const text = describeAutoDisable(undefined, reason);
+    expect(text).toContain('共存扩展');
+    expect(text).toContain('不建议');
+  });
+});
 
 const mods = [
   { name: 'no-ad', description: '去广告' },

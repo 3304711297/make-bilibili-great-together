@@ -11,7 +11,7 @@ import { CDN_PROBE_STATUS_KEY, type CdnProbeStatus } from '../cdn-probe/probe';
 import { STATS_KEY, type StatsPayload } from '../stats/registry';
 import { DNR_STATS_KEY, type DnrStatsPayload } from '../stats/dnr';
 import {
-  buildModuleRows, buildStatsView, filterExportableKeys, validateImportPayload, type ModuleRow
+  buildModuleRows, buildStatsView, filterExportableKeys, validateImportPayload, describeAutoDisable, type ModuleRow
 } from './model';
 import { MBGT_VERSION } from '../../version';
 
@@ -140,7 +140,7 @@ export function PanelApp(props: { store: KVStore; modules: ModuleInfo[] }) {
         ),
         row.forced ? h('span', { className: 'mbgt-muted' }, '（强制开启）') : null,
         row.autoDisabledReason
-          ? h('span', { className: 'mbgt-reason' }, `自动停用：${row.autoDisabledReason.extension} / ${row.autoDisabledReason.feature}`)
+          ? h('span', { className: 'mbgt-reason' }, `自动停用（${describeAutoDisable(data.compat, row.autoDisabledReason)}）`)
           : null,
         lockedOf(row.name) ? h('span', { className: 'mbgt-muted' }, '（即时模块锁定：扩展形态保障 document-start 拦截）') : null
       )

@@ -35,6 +35,25 @@ export function buildModuleRows(
   });
 }
 
+const EXT_DISPLAY_NAMES: Record<string, string> = { bewlycat: 'BewlyCat', avemujica: 'Ave Mujica' };
+
+/** 自动停用说明（用户反馈：要写清「识别到什么才自动关的」+「不建议打开」）：
+ * generic=检测到 BewlyCat 家族但无法细分，按保守并集停用；specific=识别到具体扩展。
+ * 统一附带强制开启的冲突警示。 */
+export function describeAutoDisable(
+  compat: CompatStatus | undefined,
+  reason: { extension: string; feature: string }
+): string {
+  const names = (compat?.extensions ?? []).map(id => EXT_DISPLAY_NAMES[id] ?? id);
+  const overlap = `与「${reason.feature}」功能重叠`;
+  const detected = compat === undefined
+    ? '识别到共存扩展'
+    : compat.generic || names.length === 0
+      ? `识别到 ${names.length > 0 ? names.join('/') : 'BewlyCat/Ave Mujica'} 家族共存（探测窗口内无法细分具体是谁），按保守并集停用`
+      : `识别到 ${names.join('/')} 共存`;
+  return `${detected}；${overlap}。强制开启可能与对方界面冲突，不建议开启`;
+}
+
 export const STATS_LABELS: Record<string, string> = {
   'beacon': 'sendBeacon 跟踪上报',
   'spyware-fetch': '上报 fetch 拦截',
