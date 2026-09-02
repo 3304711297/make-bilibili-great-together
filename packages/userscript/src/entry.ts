@@ -18,7 +18,7 @@ import {
   type CdnUtilHooks
 } from '@mbgt/core';
 import { unsafeConsole, unsafeWindowRef } from './gm-adapter';
-import { initModuleMenu, getModuleEnabledSync } from './module-menu';
+import { initModuleMenu, getModuleEnabledSync, updateModuleMenuStates } from './module-menu';
 import { createGMKVStore } from './gm-storage';
 import { createGMProbeFetch } from './gm-probe-fetch';
 import { isTopFrame, hasExtensionMarker } from './top-frame';
@@ -109,6 +109,8 @@ void (async () => {
             logger.log(`[${d.module}] auto-disabled: ${d.extension} (${d.feature}) detected`);
           }
           core.registerModules(enabled);
+          // 菜单/面板口径对齐：按生效状态重注册 deferred 模块菜单（自动停用 ⛔ / 强制开启标注）
+          updateModuleMenuStates(deferred, new Set(autoDisabled.map(d => d.module)));
           await store.set(COMPAT_STATUS_KEY, {
             family: probe.family,
             extensions: probe.extensions.map(e => e.id),
