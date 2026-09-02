@@ -9,9 +9,11 @@ export default function optimizeStory(_logger: Logger): ModuleMeta {
   return {
     name: 'optimize-story',
     description: '动态页面优化',
+    // 冲突经真机实测确认（2026-09-02，Issue #1）：BewlyCat/AveMujica 均在动态页注入
+    // momentsPage/bewly-design 类并移除原生组件，与本模块宽屏改造重叠
     conflicts: [
-      { extension: 'bewlycat', feature: '动态页改造（provisional）' },
-      { extension: 'avemujica', feature: '动态页改造（provisional）' }
+      { extension: 'bewlycat', feature: '动态页改造（真机已确认，Issue #1）' },
+      { extension: 'avemujica', feature: '动态页改造（真机已确认，Issue #1）' }
     ],
     onStory({ addStyle }) {
       addStyle(css`
