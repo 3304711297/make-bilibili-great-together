@@ -6,7 +6,7 @@ const mod = (name: string): ModuleMeta => ({ name, description: '' });
 const ALL = ['no-ad', 'optimize-homepage', 'remove-useless-url-params', 'optimize-story', 'player-video-fit', 'use-system-fonts'].map(mod);
 
 describe('CONFLICT_TABLE', () => {
-  it('与 spec §3.3 一致（含 provisional 的 optimize-story）', () => {
+  it('与 spec §3.3 一致（optimize-story 两项已经 Issue #1 真机确认）', () => {
     expect(Object.keys(CONFLICT_TABLE.bewlycat).sort()).toEqual(
       ['no-ad', 'optimize-homepage', 'optimize-story', 'player-video-fit', 'remove-useless-url-params']);
     expect(Object.keys(CONFLICT_TABLE.avemujica).sort()).toEqual(

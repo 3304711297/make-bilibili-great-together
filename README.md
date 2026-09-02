@@ -41,7 +41,7 @@ playinfo 中出现镜像候选时自动探测（每候选小体积 range 请求�
 - 探测窗口 10 秒；检测到家族但无法区分具体扩展时按保守策略停用并集
 - 被停用的模块会写入控制台日志（`[mbgt] [模块名] auto-disabled: ...`）
 - 强制开启某模块：设置 `GM存储键 mbgt:override:<模块名>` 为 `force-on`（也可在设置面板操作，见下方「设置与面板」）
-- 冲突表中 `optimize-story` 两项为 provisional（待真机实测确认，追踪 Issue：[#1](https://github.com/3304711297/make-bilibili-great-together/issues/1)）
+- 冲突表中 `optimize-story` 两项已经真机实测确认为真实冲突（2026-09-02，追踪 Issue：[#1](https://github.com/3304711297/make-bilibili-great-together/issues/1)）
 
 ## 致谢
 

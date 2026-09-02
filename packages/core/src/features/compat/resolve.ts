@@ -1,20 +1,20 @@
 import type { ExtensionId, ProbeResult } from '../../platform/compat-types';
 import type { ModuleMeta } from '../../types';
 
-/** module 名 → 对方功能标识（spec §3.3；optimize-story 两项 provisional，待真机实测后修订） */
+/** module 名 → 对方功能标识（spec §3.3；optimize-story 两项经真机实测确认为真实冲突，追踪 Issue #1） */
 export const CONFLICT_TABLE: Record<ExtensionId, Record<string, string>> = {
   bewlycat: {
     'no-ad': 'blockAds / 首页重构',
     'optimize-homepage': '首页重构',
     'remove-useless-url-params': 'cleanUrlArgument',
-    'optimize-story': '动态页改造（provisional）',
+    'optimize-story': '动态页改造（真机已确认，Issue #1）',
     'player-video-fit': 'bewlyWidescreen / 播放器样式'
   },
   avemujica: {
     'no-ad': 'blockAds / 首页重构',
     'optimize-homepage': '首页重构',
     'remove-useless-url-params': 'cleanUrlArgument',
-    'optimize-story': '动态页改造（provisional）',
+    'optimize-story': '动态页改造（真机已确认，Issue #1）',
     'use-system-fonts': 'customizeFont（默认启用自家推荐字体）'
   }
 };
