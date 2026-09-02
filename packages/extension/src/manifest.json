@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Make Bilibili Great Together",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "minimum_chrome_version": "111",
   "description": "接手 Make Bilibili Great Than Ever Before：反跟踪、反 PCDN/P2P、CDN 选优，与 BewlyCat/AveMujica 共存感知",
   "permissions": [
@@ -33,7 +33,9 @@
         "https://live.bilibili.com/*",
         "https://space.bilibili.com/*"
       ],
-      "js": ["isolated.js"],
+      "js": [
+        "isolated.js"
+      ],
       "run_at": "document_start"
     },
     {
@@ -43,7 +45,9 @@
         "https://live.bilibili.com/*",
         "https://space.bilibili.com/*"
       ],
-      "js": ["main.js"],
+      "js": [
+        "main.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     }
@@ -51,5 +55,8 @@
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
+  },
+  "action": {
+    "default_title": "Make Bilibili Great Together"
   }
 }
