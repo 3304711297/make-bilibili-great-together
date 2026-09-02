@@ -50,7 +50,7 @@ export function describeAutoDisable(
     ? '识别到共存扩展'
     : compat.generic || names.length === 0
       ? `识别到 ${names.length > 0 ? names.join('/') : 'BewlyCat/Ave Mujica'} 家族共存（探测窗口内无法细分具体是谁），按保守并集停用`
-      : `识别到 ${names.join('/')} 共存`;
+      : `识别到 ${names.join('/')} 共存（已激活对应功能）`;
   return `${detected}；${overlap}。强制开启可能与对方界面冲突，不建议开启`;
 }
 

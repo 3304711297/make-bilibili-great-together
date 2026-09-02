@@ -10,6 +10,8 @@ export interface ProbeResult {
   extensions: DetectedExtension[];
   /** 家族在场但无法定位到具体扩展（特征不足/超时），按保守并集处理 */
   generic: boolean;
+  /** 细粒度功能激活状态快照（精确识别哪些冲突功能真正处于生效态） */
+  activeFeatures?: Record<string, boolean>;
 }
 
 /** 三态快照：null=未装；'pending-family'=家族在场等特征；ProbeResult=特征命中即结算 */

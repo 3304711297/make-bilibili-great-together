@@ -21,10 +21,28 @@ describe('resolveConflicts', () => {
     expect(r.autoDisabled).toEqual([]);
   });
 
-  it('仅 BewlyCat→其表内 5 个禁用，use-system-fonts 保留', () => {
+  it('仅 BewlyCat (无细粒度状态)→其表内 5 个禁用，use-system-fonts 保留', () => {
     const r = resolveConflicts(ALL, { family: 'bewly', extensions: [{ id: 'bewlycat', version: null }], generic: false }, new Set(), new Set());
     expect(r.enabled.map(m => m.name)).toEqual(['use-system-fonts']);
     expect(r.autoDisabled.map(d => d.extension)).toEqual(new Array(5).fill('bewlycat'));
+  });
+
+  it('细粒度功能状态生效：BewlyCat 在场但未激活 momentsPage 与 widescreen 时，对应模块保持启用', () => {
+    const r = resolveConflicts(ALL, {
+      family: 'bewly',
+      extensions: [{ id: 'bewlycat', version: '1.7.8' }],
+      generic: false,
+      activeFeatures: {
+        'optimize-homepage': true,
+        'no-ad': true,
+        'remove-useless-url-params': true,
+        'optimize-story': false, // 对方未启用动态页改造
+        'player-video-fit': false // 对方未启用播放器宽屏
+      }
+    }, new Set(), new Set());
+
+    expect(r.enabled.map(m => m.name)).toEqual(['optimize-story', 'player-video-fit', 'use-system-fonts']);
+    expect(r.autoDisabled.map(d => d.module)).toEqual(['no-ad', 'optimize-homepage', 'remove-useless-url-params']);
   });
 
   it('仅 AveMujica→其表内 5 个禁用，player-video-fit 保留', () => {
