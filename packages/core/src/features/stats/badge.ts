@@ -1,7 +1,7 @@
 // 统计角标（spec §4.2）：右下角可收起角标，默认关闭，设置里开启（接线层按 mbgt:ui:stats-badge 挂载）。
 // 基线 = mount 时读到的持久计数；实时增量经 onInterception 监听。挂载失败只损失可视化（降级原则）。
 import type { KVStore } from '../../platform/storage';
-import { onInterception, readStats, sessionCounts } from './registry';
+import { onInterception, onFlush, readStats, sessionCounts } from './registry';
 import { foldDnrCounts, DNR_STATS_KEY, type DnrStatsPayload } from './dnr';
 
 const BADGE_ID = 'mbgt-stats-badge';
@@ -59,6 +59,14 @@ export function mountStatsBadge(opts: { store: KVStore }): (() => void) | null {
     };
 
     const off = onInterception(() => render());
+    // flush 落盘成功 → 立即重读基线（自愈加速；失败/跨上下文仍由下方 30s timer 兜底）
+    const offFlush = onFlush(() => {
+      void readBadgeBaseline(opts.store).then(base => {
+        if (destroyed) return;
+        baselineCounts = base;
+        render();
+      }).catch(() => { /* 重读失败保持上次基线 */ });
+    });
     void readBadgeBaseline(opts.store).then(base => {
       baselineCounts = base;
       render();
@@ -81,6 +89,7 @@ export function mountStatsBadge(opts: { store: KVStore }): (() => void) | null {
       destroyed = true;
       clearInterval(baselineTimer);
       off();
+      offFlush();
       chip.remove();
       style.remove();
     };
