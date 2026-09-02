@@ -18,6 +18,7 @@ env:
 jobs:
   watch:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - env:
           GH_TOKEN: ${{ github.token }}
