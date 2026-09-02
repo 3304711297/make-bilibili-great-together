@@ -16,11 +16,69 @@ export async function readBadgeBaseline(store: KVStore): Promise<Record<string, 
 }
 
 const BADGE_STYLE = `
-#${BADGE_ID}{position:fixed;right:12px;bottom:12px;z-index:2147483000;font:12px/1.4 system-ui,sans-serif;
-  background:rgba(20,20,20,.85);color:#fff;padding:6px 10px;border-radius:999px;cursor:pointer;user-select:none}
-#${BADGE_ID} ul{position:fixed;right:12px;bottom:44px;margin:0;padding:8px 12px;list-style:none;
-  background:rgba(20,20,20,.9);color:#fff;border-radius:8px;max-width:260px;display:none}
-#${BADGE_ID}.open ul{display:block}
+#${BADGE_ID} {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2147483000;
+  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+  background: rgba(24, 25, 28, 0.88);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#${BADGE_ID}:hover {
+  transform: translateY(-2px);
+  border-color: #00aeec;
+  box-shadow: 0 6px 20px rgba(0, 174, 236, 0.3);
+}
+#${BADGE_ID} ul {
+  position: fixed;
+  right: 14px;
+  bottom: 48px;
+  margin: 0;
+  padding: 10px 14px;
+  list-style: none;
+  background: rgba(24, 25, 28, 0.94);
+  color: #f1f2f3;
+  border-radius: 12px;
+  max-width: 280px;
+  min-width: 160px;
+  display: none;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  font-size: 12px;
+  line-height: 1.6;
+}
+#${BADGE_ID} ul li {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: space-between;
+}
+#${BADGE_ID} ul li:last-child {
+  border-bottom: none;
+}
+#${BADGE_ID}.open ul {
+  display: block;
+  animation: mbgt-badge-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes mbgt-badge-pop {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 `;
 
 export function mountStatsBadge(opts: { store: KVStore }): (() => void) | null {

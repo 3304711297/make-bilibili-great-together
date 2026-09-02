@@ -1,7 +1,7 @@
 import { render } from 'preact';
 import { h } from 'preact';
 import {
-  createLogger, getDefaultModules, PanelApp, type KVStore, type ModuleInfo
+  createLogger, getDefaultModules, PanelApp, PANEL_STYLE, type KVStore, type ModuleInfo
 } from '@mbgt/core';
 
 // 命名空间双解析 browser ?? chrome：Edge（Chromium 系）不提供 browser.*，仅 chrome.*
@@ -18,6 +18,14 @@ const api = (globalThis as unknown as { browser?: MbgtExtensionApi; chrome?: Mbg
 if (!api) {
   document.getElementById('app')!.textContent = '扩展存储 API 不可用';
   throw new Error('extension storage API unavailable (browser/chrome)');
+}
+
+// 注入面板样式
+if (!document.getElementById('mbgt-panel-style')) {
+  const style = document.createElement('style');
+  style.id = 'mbgt-panel-style';
+  style.textContent = PANEL_STYLE;
+  document.head?.appendChild(style);
 }
 
 // options 页运行在扩展上下文：直连 chrome.storage.local（含 getAll，无需桥接）

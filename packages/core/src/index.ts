@@ -25,5 +25,5 @@ export {
   buildModuleRows, STATS_LABELS, buildStatsView, filterExportableKeys, validateImportPayload,
   type ModuleRow
 } from './features/panel/model';
-export { PanelApp, mountFloatingPanel, loadPanelData, type ModuleInfo, type PanelData } from './features/panel/panel';
+export { PanelApp, mountFloatingPanel, loadPanelData, PANEL_STYLE, type ModuleInfo, type PanelData } from './features/panel/panel';
 export { MBGT_VERSION } from './version';
