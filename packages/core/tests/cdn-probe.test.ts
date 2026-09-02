@@ -140,4 +140,24 @@ describe('destroy 生命周期 race（P2 修复回归）', () => {
     probe.ensureProbe(['h1.bilivideo.com'], 'https://h1.bilivideo.com/upgcxcode/x.m4s');
     expect(fetchLike).toHaveBeenCalledTimes(0);
   });
+
+  it('destroy 取消在途探测：fetchLike 收到的 AbortSignal 被触发', async () => {
+    const signals: (AbortSignal | undefined)[] = [];
+    let resolveFetch: (r: { ok: boolean; ms: number }) => void = () => {};
+    const fetchLike = vi.fn((_url: string, _timeoutMs: number, signal?: AbortSignal) => {
+      signals.push(signal);
+      return new Promise<{ ok: boolean; ms: number }>(res => { resolveFetch = res; });
+    });
+    const probe = createCdnProbe({ fetchLike: fetchLike as any, logger, store });
+    probe.ensureProbe(['h1.bilivideo.com', 'h2.bilivideo.com'], 'https://h1.bilivideo.com/upgcxcode/x.m4s');
+    // 前置：每个在途候选都拿到未触发的 signal
+    expect(signals).toHaveLength(2);
+    expect(signals.every(s => s && !s.aborted)).toBe(true);
+    probe.destroy();
+    expect(signals.every(s => s!.aborted)).toBe(true);
+    // abort 后自然结算的结果同样被闸门丢弃
+    resolveFetch({ ok: false, ms: 100 });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(probe.getStatus()).toBe(null);
+  });
 });

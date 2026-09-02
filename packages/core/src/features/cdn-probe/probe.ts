@@ -3,15 +3,16 @@
 // 候选来自 cdnUtil 收集的 mirror_type_upgcxcode_hosts——P2P/PCDN 与无 SSL 的 mirror14b
 // 在收集阶段已被排除（knownP2pCdnDomainPattern），本文件不做二次过滤。
 //
-// destroy 语义裁定（docs/superpowers/specs/2026-09-01-plan5-polish-design.md §7）：
+// destroy 语义裁定（docs/superpowers/specs/2026-09-01-plan5-polish-design.md §7 + backlog #1 落地）：
 // 1. destroy() 后 getBestHost() 维持现状，仍可能返回销毁前已写入的旧 cache；
-// 2. 销毁路径不引入 AbortController——fetchLike 为自定义签名，穿透 abort 需修改两侧适配层，
-//    归入待办池；销毁时在途 fetch 自然完成，结果在 runProbe 的 destroyed 闸门处丢弃。
+// 2. destroy() 会 abort 在途请求（fetchLike 第三参 AbortSignal，backlog #1 已落地）——适配层收到
+//    abort 后以 {ok:false} 结算，结果仍在 runProbe 的 destroyed 闸门处丢弃。
 import type { Logger } from '../../logger';
 import type { KVStore } from '../../platform/storage';
 
-/** 探测网络通道：userscript 走 GM_xmlhttpRequest（绕 CORS+绕页面 hook），扩展走 isolated 世界裸 fetch */
-export type ProbeFetch = (url: string, timeoutMs: number) => Promise<{ ok: boolean; ms: number }>;
+/** 探测网络通道：userscript 走 GM_xmlhttpRequest（绕 CORS+绕页面 hook），扩展走 isolated 世界裸 fetch。
+ * signal 为可选第三参：destroy 时取消在途请求（backlog 已落地）；适配层收到 abort 后自行以 {ok:false} 结算，不得 reject。 */
+export type ProbeFetch = (url: string, timeoutMs: number, signal?: AbortSignal) => Promise<{ ok: boolean; ms: number }>;
 
 export const PROBE_TIMEOUT_MS = 2_000;
 export const PROBE_CACHE_TTL_MS = 5 * 60_000;
@@ -42,9 +43,11 @@ export function createCdnProbe(opts: { fetchLike: ProbeFetch; logger: Logger; st
   let lastInput: { hosts: string[]; sampleUrl: string } | null = null;
   let reprobeTimer: ReturnType<typeof setTimeout> | null = null;
   // destroy 生命周期闸门：销毁后丢弃在途探测结果并拒绝复活。
-  // 语义裁定（见 docs plan5）：getBestHost() 维持现状仍可能返回旧 cache；不引入 AbortController，
-  // 在途 fetchLike 自然完成、结果在闸门处丢弃。
+  // 语义裁定（见 docs plan5 §7）：getBestHost() 维持现状仍可能返回旧 cache。
+  // AbortController 已落地（backlog #1）：destroy 时 abort 在途请求，适配层尽早以 {ok:false} 结算；
+  // 闸门仍保留——abort 结算结果与竞态窗口内自然完成的请求结果一样在闸门处丢弃。
   let destroyed = false;
+  let inFlight: AbortController | null = null;
 
   return {
     ensureProbe(candidateHosts, sampleUrl) { ensureProbe(candidateHosts, sampleUrl); },
@@ -54,6 +57,7 @@ export function createCdnProbe(opts: { fetchLike: ProbeFetch; logger: Logger; st
     getStatus() { return status; },
     destroy() {
       destroyed = true;
+      if (inFlight) { inFlight.abort(); inFlight = null; }
       if (reprobeTimer) { clearTimeout(reprobeTimer); reprobeTimer = null; }
       lastInput = null;
     }
@@ -73,18 +77,21 @@ export function createCdnProbe(opts: { fetchLike: ProbeFetch; logger: Logger; st
   async function runProbe(hosts: string[], sampleUrl: string): Promise<void> {
     const startedAt = Date.now();
     const results: CdnProbeResult[] = [];
+    const ctrl = new AbortController();
+    inFlight = ctrl;
     await Promise.all(hosts.map(async (host) => {
       try {
         const url = new URL(sampleUrl);
         url.hostname = host;
         url.protocol = 'https:';
         url.port = '443';
-        const r = await fetchLike(url.href, PROBE_TIMEOUT_MS);
+        const r = await fetchLike(url.href, PROBE_TIMEOUT_MS, ctrl.signal);
         results.push({ host, ok: r.ok, ms: r.ms });
       } catch {
         results.push({ host, ok: false, ms: PROBE_TIMEOUT_MS });
       }
     }));
+    inFlight = null;
     const oks = results.filter(r => r.ok).sort((a, b) => a.ms - b.ms);
     const best = oks[0] ?? null;
     probing = false;
