@@ -458,8 +458,8 @@ body.mbgt-standalone-options .mbgt-panel-root {
 }
 `;
 
-export function PanelApp(props: { store: KVStore; modules: ModuleInfo[] }) {
-  const { store, modules } = props;
+export function PanelApp(props: { store: KVStore; modules: ModuleInfo[]; noReload?: boolean }) {
+  const { store, modules, noReload = false } = props;
   const [data, setData] = useState<PanelData | null>(null);
   const [activeTab, setActiveTab] = useState<'modules' | 'stats' | 'settings'>('modules');
   const [importText, setImportText] = useState('');
@@ -480,7 +480,9 @@ export function PanelApp(props: { store: KVStore; modules: ModuleInfo[] }) {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const loop = async () => {
       if (cancelled) return;
-      try { await reload(); } catch { /* 读失败保留旧数据 */ }
+      try {
+        if (!document.hidden) await reload();
+      } catch { /* 读失败保留旧数据 */ }
       if (cancelled) return;
       timer = setTimeout(loop, 2_000);
     };
@@ -668,10 +670,10 @@ export function PanelApp(props: { store: KVStore; modules: ModuleInfo[] }) {
               } catch (e) { console.warn('[mbgt] panel import failed', e); }
             }
           }, '一键导入'),
-          h('button', {
+          !noReload ? h('button', {
             className: 'mbgt-btn',
             onClick: () => { unsafeLocationReload(); }
-          }, '刷新页面')
+          }, '刷新页面') : null
         ),
         h('textarea', {
           className: 'mbgt-textarea',
@@ -693,7 +695,7 @@ export function PanelApp(props: { store: KVStore; modules: ModuleInfo[] }) {
   );
 }
 
-/** 页内刷新（options 页不适用；PanelApp 在 options 中不渲染该按钮时传入 noReload） */
+/** 页内刷新（仅在 userscript 浮层形态渲染；options 页传入 noReload=true 隐藏该按钮） */
 function unsafeLocationReload(): void {
   try {
     (globalThis as unknown as { location: { reload(): void } }).location.reload();

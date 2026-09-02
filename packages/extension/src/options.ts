@@ -44,7 +44,7 @@ const panelModules: ModuleInfo[] = mods.map(m => ({ name: m.name, description: m
 const root = document.getElementById('app')!;
 root.textContent = '';
 try {
-  render(h(PanelApp, { store, modules: panelModules }) as any, root);
+  render(h(PanelApp, { store, modules: panelModules, noReload: true }) as any, root);
 } catch (e) {
   root.textContent = '面板渲染失败（不影响核心拦截）';
   console.warn('[mbgt] options panel render failed', e);
