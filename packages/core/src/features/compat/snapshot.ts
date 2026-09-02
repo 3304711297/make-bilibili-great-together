@@ -28,19 +28,6 @@ const AVEMUJICA_EXCLUSIVE_MARKERS = [
   'style[data-theme="ave-mujica"]'
 ].join(', ');
 
-// 🏠 层级 3：家族通用标记（若无独占指纹且无版本号，作为待定通用宿主）
-const FAMILY_COMMON_MARKERS = [
-  '[bewly-auto-exit-listener]',
-  '.bewly-watch-later-btn',
-  '[data-bewly-theme]',
-  '.bewly-design',
-  '.bewly-dock',
-  '#bewly-app',
-  '.bewly-header',
-  '.bewly-search-bar',
-  '[data-bewly-version]'
-].join(', ');
-
 /**
  * 三态 DOM 快照工厂（userscript 与扩展共用）：
  * DOM 查询：#bewly 家族宿主 + 多维分层特征标记；shadow DOM 为 open 模式可直查。
@@ -71,7 +58,8 @@ export function createBewlyFamilySnapshot(doc: Document, options?: BewlySnapshot
     }
 
     // 2. 层级 2：版本号主支启发式判定 (Version Heuristics)
-    // 当独占 UI 组件尚未渲染、但宿主带有版本号时，直接按主支号精准锁定扩展
+    // 当独占 UI 组件尚未渲染、但宿主带有版本号时，直接按主支号锁定扩展：
+    // 注：此为分支版本号启发式规则（实测 BewlyCat 1.7.x/1.6.x，AveMujica 1.8.x）。若未来上游大版本重叠，优先依赖层级 1 独占指纹。
     if (extensions.length === 0 && version) {
       if (version.startsWith('1.8.')) {
         extensions.push({ id: 'avemujica', version });
@@ -85,14 +73,7 @@ export function createBewlyFamilySnapshot(doc: Document, options?: BewlySnapshot
       return { family: 'bewly' as const, extensions, generic: false };
     }
 
-    // 4. 若无独占指纹，检查是否有家族通用组件（若有则为 pending-family 维持轮询，超时走保守 generic）
-    const hasCommonMarker = whole.querySelector(FAMILY_COMMON_MARKERS) !== null
-      || hosts.some(h => h.shadowRoot && h.shadowRoot.querySelector(FAMILY_COMMON_MARKERS) !== null);
-
-    if (hasCommonMarker) {
-      return 'pending-family';
-    }
-
+    // 4. 已确认宿主存在 (#bewly[data-version]) 但独占指纹与版本号尚未就绪，返回 pending-family 维持轮询，超时走保守 generic 避让
     return 'pending-family';
   };
 }
