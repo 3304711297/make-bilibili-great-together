@@ -16,7 +16,7 @@
 
 - **落地**：extension 主世界入口（main-entry.ts）最前置 `globalThis.__mbgt_extension_active__ = true`；userscript 入口早期经 `hasExtensionMarker`（纯函数，3 项测试）检测，命中则 `console.warn('检测到扩展版同时运行，建议二选一以免重复注入')`。遵守 T7 裁定：只警告、不自动停用/卸载、不引入冲突解决策略。
 
-## 4. 其他顺手优化想法（本轮执行过程产生，均未实现）
+## 4. ~~其他顺手优化想法~~（2026-09-02 评估后关闭，均不实现）
 
-- `runProbe` 闸门命中时可补一条 `logger.debug`（"探测结果因销毁被丢弃"），便于真机排查双形态/销毁时序问题；需权衡日志噪音。
-- `CdnProbeStatus` 落盘体积包含完整 `results` 数组，长期可考虑截断或仅存最优项，待面板数据出现增长压力再议。
+- **闸门 debug 日志**：关闭。`logger.debug`/`trace` 本身就是 noop（刻意静音防控制台噪音），写了也不输出；且 AbortController 落地后 destroy 会显式取消在途请求，丢弃路径已不再难排查。
+- **`CdnProbeStatus` 落盘截断**：关闭。`results` 数组上限=单轮候选数（收集阶段已过滤，通常 1~3 条、每条数十字节），payload 可忽略；面板压力场景不存在，加截断是无收益复杂度。
