@@ -70,6 +70,8 @@ jobs:
             echo '2. 适用的改动移植并补测试；不适用的在本 Issue 说明原因；'
             echo '3. 评估完成后关闭本 Issue（下次检测到上游前进会开新 Issue 并更新记录 SHA）。'
           } > body.md
+          gh label create "$LABEL" --repo "${{ github.repository }}" \
+            --description "上游 SukkaW 更新待评估 cherry-pick" --color 5319e7 2>/dev/null || true
           gh issue create --repo "${{ github.repository }}" \
             --label "$LABEL" \
             --title "上游 SukkaW 有新提交（${UP_SHA:0:7}），请评估 cherry-pick" \
