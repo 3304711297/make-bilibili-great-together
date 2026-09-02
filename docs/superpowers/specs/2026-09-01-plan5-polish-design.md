@@ -82,3 +82,10 @@
 ## 6. 降级原则（不变）
 
 统计/面板/探测任何一环异常只吞错+日志，不影响核心拦截；面板读失败保留旧数据；探测失败回退随机镜像。
+
+## 7. destroy 语义裁定（P2 收尾补记，2026-09-02）
+
+CDN probe 生命周期 race（destroy 时在途探测）已由 `destroyed` 标志闸门修复（probe.ts：声明 + `ensureProbe`/`runProbe`/`destroy` 三处闸门），两条回归测试钉死在 `packages/core/tests/cdn-probe.test.ts`「destroy 生命周期 race」分组。裁定如下：
+
+1. **`destroy()` 后 `getBestHost()` 维持现状**：仍可能返回销毁前已写入的旧 cache（cache 写入在闸门之后，销毁前完成的探测结果不被回滚）。不做销毁即清 cache 的额外清理。
+2. **销毁路径不引入 AbortController**：`fetchLike` 为自定义签名（`(url, timeoutMs) => Promise<{ok, ms}>`），穿透 abort 需要修改 userscript（GM_xmlhttpRequest）与扩展（isolated fetch）两侧适配层，超出本轮最小修复边界，归入待办池（docs/backlog.md）。销毁时在途 fetch 自然完成，其结果在 `runProbe` 的 `destroyed` 闸门处整体丢弃（不写 cache、不写 status、不落盘、不安排重探）。
