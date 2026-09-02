@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@v4
       # 版本由根 package.json 的 packageManager 字段唯一决定，此处不得重复声明
-      - uses: pnpm/action-setup@a3252b78c470c02df07e9d792d6e8e6b4020a020 # v4.1.0
-      - uses: actions/setup-node@49933ea507dbda23493777f3948b4d2f808544bc # v4.4.0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with: { node-version: 20, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
