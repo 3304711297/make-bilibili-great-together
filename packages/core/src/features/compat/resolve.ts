@@ -51,12 +51,7 @@ export function resolveConflicts(
     const hit = activeRows.find(row => row[mod.name] !== undefined);
     if (hit) {
       const { extension, feature } = hit[mod.name];
-      // 细粒度功能状态裁决：若具体扩展在场但实测该功能未激活(activeFeatures 明确为 false)，则不予禁用
-      if (!probe.generic && probe.activeFeatures && probe.activeFeatures[mod.name] === false) {
-        enabled.push(mod);
-      } else {
-        autoDisabled.push({ module: mod.name, extension, feature });
-      }
+      autoDisabled.push({ module: mod.name, extension, feature });
     } else {
       enabled.push(mod);
     }
