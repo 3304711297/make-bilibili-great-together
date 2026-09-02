@@ -6,14 +6,19 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       # 版本由根 package.json 的 packageManager 字段唯一决定，此处不得重复声明
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@a3252b78c470c02df07e9d792d6e8e6b4020a020 # v4.1.0
+      - uses: actions/setup-node@49933ea507dbda23493777f3948b4d2f808544bc # v4.4.0
         with: { node-version: 20, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - name: 构建 userscript
@@ -27,7 +32,7 @@ jobs:
           test -f packages/extension/make-bilibili-great-together-extension.zip
           grep -q "@version" packages/userscript/dist/make-bilibili-great-together.user.js
       - name: 发布 Release（自动 notes + 产物）
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@c95fe1489396fe8a9ec8773fb6103362a796d165 # v2.2.12
         with:
           generate_release_notes: true
           files: |
