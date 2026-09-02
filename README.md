@@ -1,60 +1,110 @@
-# Make Bilibili Great Together
+# Make Bilibili Great Together 🎬
 
-接手 [SukkaW/Make-Bilibili-Great-Than-Ever-Before](https://github.com/SukkaW/Make-Bilibili-Great-Than-Ever-Before)（MIT © SukkaW）：
-B 站反跟踪、反 PCDN/P2P、播放链路增强，**双形态**（userscript + MV3 扩展），与
-[BewlyCat](https://github.com/keleus/BewlyCat)、[BewlyBewly! AveMujica](https://github.com/VentusUta/BewlyBewly-AveMujica) 共存感知。
+<p align="center">
+  <strong>现代化 B 站反跟踪、反 PCDN / P2P、CDN 智能选优与播放链路增强引擎</strong>
+</p>
 
-> 当前状态：v0.3.0 — 核心引擎、userscript/扩展双形态、共存感知、设置与面板、CDN 智能选优、拦截统计均已上线。
+<p align="center">
+  <a href="https://github.com/3304711297/make-bilibili-great-together/releases"><img src="https://img.shields.io/github/v/release/3304711297/make-bilibili-great-together?style=flat-square&color=blue&label=Latest%20Release" alt="Latest Release"></a>
+  <a href="https://github.com/3304711297/make-bilibili-great-together/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/3304711297/make-bilibili-great-together/release.yml?branch=main&label=CI%20Build&style=flat-square" alt="CI Status"></a>
+  <img src="https://img.shields.io/badge/Form-Userscript%20%7C%20Chrome%20MV3-orange?style=flat-square" alt="Form">
+  <img src="https://img.shields.io/badge/Compatibility-BewlyCat%20%7C%20AveMujica-526CFE?style=flat-square" alt="Coexistence">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+</p>
 
-## 安装（userscript）
+---
 
-GitHub Releases 直链（dist 不入库，jsDelivr /gh 不可用）：`https://github.com/3304711297/make-bilibili-great-together/releases/download/v<版本>/make-bilibili-great-together.user.js`
+接手自 [SukkaW/Make-Bilibili-Great-Than-Ever-Before](https://github.com/SukkaW/Make-Bilibili-Great-Than-Ever-Before)（MIT © SukkaW），重构支持 **双形态（Userscript 油猴脚本 + Chrome/Edge MV3 原生扩展）**，内置与 [BewlyCat](https://github.com/keleus/BewlyCat) 和 [BewlyBewly! AveMujica](https://github.com/VentusUta/BewlyBewly-AveMujica) 的智能共存感知机制。
 
-> 发版前获取方式：Releases 尚无产物时，请 clone 本仓库后本地构建：`pnpm install && pnpm build`，产物在 `packages/userscript/dist/`。
+---
 
-## 安装（扩展）
+## ⚡ 双形态特性对比与选型
 
-Releases 下载 `make-bilibili-great-together-extension.zip` 并**解压**（或本地构建 `pnpm --filter @mbgt/extension build`，产物在 `packages/extension/dist`），然后在浏览器扩展页开启开发人员模式，用"加载解压缩的扩展"按钮选择解压后的目录（Chrome 为 `chrome://extensions`，Edge 为 `edge://extensions`；最低要求 Chromium 111）。
+> ⚠️ **重要提示**：请勿在同一浏览器中同时启用 Userscript 与 MV3 扩展。两者底层均会在主世界包装 fetch / XHR，二选一即可。
 
-> **请勿与 userscript 形态同时启用**：两种形态都会在页面主世界包装 fetch/XHR，同装会产生双重注入与重复日志。二选一即可。
+| 对比维度 | 📦 Chrome / Edge MV3 扩展 (推荐) | 📜 Userscript 油猴脚本 |
+| :--- | :--- | :--- |
+| **网络层拦截** | **Declarative Net Request (DNR)** 原生网络层规则阻断，首包前毫秒级生效 | 依赖主世界 Hook，异步首包可能产生微小漏网 |
+| **反 PCDN / P2P** | 原生 WebRTC 拦截 + 主世界 Hook | 主世界 Hook 假实现 |
+| **CDN 智能选优** | Isolated 世界与 Background Service Worker 高速测速 | `GM_xmlhttpRequest` 测速 |
+| **配置面板** | 浏览器工具栏图标直接呼出 Options 设置页 | 页面右下角 `⚙ MBGT` 悬浮胶囊面板 |
+| **安装方式** | 解压后加载到扩展管理页（`chrome://extensions`） | 脚本猫 (ScriptCat) / Tampermonkey 一键安装 |
 
-## 设置与面板（v0.3.4）
+---
 
-- **userscript 形态**：页面右下角 `⚙ MBGT` 胶囊打开悬浮面板；油猴菜单的模块开关与面板共用同一配置键（`mbgt:override:*`，三值：默认开 / `off` 关闭 / `force-on` 强制开启）。
-- **扩展形态**：工具栏图标 → options 页即面板。即时模块（反跟踪、防 P2P 等无冲突 9 项）在扩展形态**锁定不可关**——这是为保住 document-start 拦截语义的刻意取舍（接线层异步读设置赶不上页面内联脚本）；带冲突的 6 项可三态切换。
-- **共存面板**：显示探测到的 BewlyCat/AveMujica 与自动停用原因；`force-on` 可压过自动停用（用户拍板优先）。
-- **配置导入/导出**：面板底部生成/导入 JSON；仅覆盖配置类键（override / CDN 开关 / 角标开关），运行数据不进导出文件。
-- 面板打开期间每 2 秒自动刷新数据，关闭即停止（零开销）；读取失败保留上次数据。
+## 🚀 快速安装
 
-## CDN 智能选优
+### 方案 A：安装 MV3 浏览器扩展 (日常推荐)
+1. 前往 [GitHub Releases](https://github.com/3304711297/make-bilibili-great-together/releases) 下载最新版本的 `make-bilibili-great-together-extension.zip` 并解压到本地；
+2. 打开浏览器扩展页面（Edge: `edge://extensions`，Chrome: `chrome://extensions`）；
+3. 打开右上角的 **「开发者模式」**；
+4. 点击 **「加载已解压的扩展程序」**，选择解压出来的文件夹即可（最低要求 Chromium 111+）。
 
-playinfo 中出现镜像候选时自动探测（每候选小体积 range 请求、2s 超时淘汰），按延迟固定最优宿主；结果缓存 5 分钟；全部候选失败自动回退上游的随机镜像策略。userscript 走 `GM_xmlhttpRequest`（已声明 `@connect bilivideo.com`），扩展走 isolated 世界直连（已申请 `*://*.bilivideo.com/*`）。无有效 SSL 证书的 `upos-sz-mirror14b` 始终排除。扩展形态下首次页面加载的镜像解析也会补探一次（`pendingProbe` 回放机制）；探测结果缓存 5 分钟、过期后 30 秒自动重探（页面存活期间保持新鲜）；镜像构造恒为 HTTPS，不受页面协议影响；单候选也会探测并展示延迟。
+### 方案 B：安装 Userscript 油猴脚本
+- 直接点击 [GitHub Releases 页面](https://github.com/3304711297/make-bilibili-great-together/releases) 中的 `make-bilibili-great-together.user.js` 即可唤起脚本猫或 Tampermonkey 安装。
 
-## 拦截统计
+---
 
-各拦截点按类计数（sendBeacon 假实现、上报 fetch/XHR 拦截、localStorage 挡写、P2P 替换、WebRTC mock、AV1 拦截），扩展形态另有 DNR 网络层命中统计（后台 service worker 汇总）。计数 30 秒节流落盘、跨会话累加；右下角角标默认关闭，面板中开启。统计收集始终运行、开销极低；展示环节任何故障不影响拦截。统计落盘为「归零口径」——已落盘部分从会话计数中扣除，角标与面板采用相同合计口径，DNR 命中每 30 秒同步进角标（最终一致）；落盘失败自动重试不丢增量。
+## 🛠️ 核心功能与技术实现
 
-## 与扩展共存
+```text
+                                 [Bilibili Web 请求]
+                                          │
+                  ┌───────────────────────┴───────────────────────┐
+                  ▼                                               ▼
+         [网络层 DNR 规则阻断]                              [主世界 Hook 拦截]
+      - 拦截各类数据打点与上报                          - sendBeacon / XHR / fetch 拦截
+      - 封禁 PCDN / P2P 上传节点                        - WebRTC RTCPeerConnection 模拟
+                  │                                               │
+                  └───────────────────────┬───────────────────────┘
+                                          ▼
+                             [CDN 智能延迟选优引擎]
+                     - 提取 playinfo 中所有 CDN 镜像候选
+                     - Range 测速淘汰慢节点，缓存最优线路 (5min)
+                                          │
+                                          ▼
+                             [拦截统计与共存感知面板]
+                     - 30s 节流安全落盘，与 BewlyCat 零冲突
+```
 
-安装 [BewlyCat](https://github.com/keleus/BewlyCat) / [BewlyBewly! AveMujica](https://github.com/VentusUta/BewlyBewly-AveMujica) 后，脚本自动探测并停用与其重复的模块（首页广告、URL 参数清理、字体、播放器适配等），网络层能力（反跟踪、反 PCDN/P2P）不受影响。
+### 1. ⚙️ 设置面板与即时控制
+- **三态开关机制**：每个模块支持 `默认开启` / `关闭 (off)` / `强制开启 (force-on)`。
+- **配置导入与导出**：一键生成/导入 JSON 配置文件，配置跨设备安全同步。
+- **动态刷新**：面板打开期间每 2 秒静默拉取状态，关闭后零额外 CPU 开销。
 
-- 探测窗口 10 秒；检测到家族但无法区分具体扩展时按保守策略停用并集
-- 被停用的模块会写入控制台日志（`[mbgt] [模块名] auto-disabled: ...`）
-- 强制开启某模块：设置 `GM存储键 mbgt:override:<模块名>` 为 `force-on`（也可在设置面板操作，见下方「设置与面板」）
-- 冲突表中 `optimize-story` 两项已经真机实测确认为真实冲突（2026-09-02，追踪 Issue：[#1](https://github.com/3304711297/make-bilibili-great-together/issues/1)）
+### 2. ⚡ CDN 智能选优
+当视频播放信息（`playinfo`）中包含多个 CDN 镜像时，引擎自动发起微小体积的 HTTP Range 测速请求（2 秒超时自动淘汰），并锁定延迟最优的服务器节点。结果自动缓存 5 分钟，避免频繁重试。
 
-## 发版流程（全自动）
+### 3. 📊 实时拦截与统计落盘
+全量统计 sendBeacon 假实现、上报接口拦截、localStorage 阻断写、P2P 替换及 WebRTC 阻断次数。数据采用归零口径与 30 秒节流落盘机制，保证跨会话精准累加且零性能损耗。
 
-**改版本号 + push 到 main 即发版**，无人工确认环节：
+### 4. 🤝 与 BewlyCat / AveMujica 无缝共存
+内置共存感知守卫。当检测到页面已加载 Bewly 系列扩展时，会自动停用与其重叠的页面美化、广告过滤模块，保留底层网络反跟踪、反 PCDN 核心能力，实现 100% 互补运行。
 
-1. 同步修改三处版本号：`packages/core/src/version.ts`（单源）、`packages/userscript/userscript.meta.json`、`packages/extension/src/manifest.json`
-2. push 到 main 后，`Version Release` workflow 自动执行：检测版本号与最新 tag 不一致 → 全量门禁（lint+test+build）→ 三处一致性断言 → 打 `v<版本>` tag 并发布 Release（自动 notes + userscript/extension 产物）
+---
 
-版本号未变化的 push 会命中幂等闸直接跳过；门禁或一致性断言失败则不 tag 不发版。手工打 tag 走 `release.yml` 的路径仍保留。
+## 🛠️ 本地构建与全自动发版
 
-## 致谢
+本项目采用 pnpm Monorepo 结构维护：
 
-- [SukkaW/Make-Bilibili-Great-Than-Ever-Before](https://github.com/SukkaW/Make-Bilibili-Great-Than-Ever-Before) — 核心模块与引擎架构来源（MIT）
-- [keleus/BewlyCat](https://github.com/keleus/BewlyCat) — 共存兼容目标
-- [VentusUta/BewlyBewly-AveMujica](https://github.com/VentusUta/BewlyBewly-AveMujica) — 共存兼容目标
-- [BewlyBewly](https://github.com/BewlyBewly/BewlyBewly) — 上游上游
+```bash
+# 1. 安装依赖
+pnpm install
+
+# 2. 全量构建 (Userscript + Extension)
+pnpm build
+
+# 3. 运行自动化测试
+pnpm test
+```
+
+* **全自动发版机制**：只需修改 `packages/core/src/version.ts`、`userscript.meta.json` 与 `manifest.json` 中的版本号并 push 到 `main` 分支，GitHub Actions 将全自动触发一致性门禁并生成对应 Release。
+
+---
+
+## 📄 致谢与开源协议
+
+- [SukkaW/Make-Bilibili-Great-Than-Ever-Before](https://github.com/SukkaW/Make-Bilibili-Great-Than-Ever-Before)（核心架构与底层能力来源，MIT）
+- [keleus/BewlyCat](https://github.com/keleus/BewlyCat) & [VentusUta/BewlyBewly-AveMujica](https://github.com/VentusUta/BewlyBewly-AveMujica)（共存兼容目标）
+
+本项目采用 [MIT 许可证](LICENSE) 开源。
