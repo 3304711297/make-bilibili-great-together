@@ -4,9 +4,18 @@ import { DNR_STATS_KEY, mergeDnrCounts, type DnrStatsPayload } from '@mbgt/core'
 type MbgtApi = {
   storage: { local: { get(key: string): Promise<Record<string, unknown>>; set(items: Record<string, unknown>): Promise<void> } };
   declarativeNetRequest?: { onRuleMatchedDebug?: { addListener(cb: (info: unknown) => void): void } };
+  action?: { onClicked?: { addListener(cb: () => void): void } };
+  runtime?: { openOptionsPage?(): Promise<void> | void };
 };
 const api = (globalThis as unknown as { browser?: MbgtApi; chrome?: MbgtApi }).browser
   ?? (globalThis as unknown as { chrome?: MbgtApi }).chrome;
+
+// 工具栏图标（manifest action 无 popup）点击 → 打开设置面板（options 页）
+try {
+  api?.action?.onClicked?.addListener(() => {
+    try { void api.runtime?.openOptionsPage?.(); } catch (e) { console.warn('[mbgt] open options failed:', e); }
+  });
+} catch { /* action API 不可用时无工具栏行为 */ }
 
 try {
   const dnr = api?.declarativeNetRequest;
