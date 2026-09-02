@@ -12,10 +12,9 @@
 - **已补测**（`packages/userscript/tests/userscript-layer.test.ts`，5 项）：`getModuleEnabledSync` 同步三值语义（缺省 on / off / force-on）与 `createGMKVStore` GM 异步 API→KVStore 适配（往返/getAll）。`isTopFrame` 此前已有 3 项。
 - **不补测项（裁定）**：`gm-adapter`/`gm-probe-fetch`（依赖 GM_* 全局与网络，属环境接线，由真机冒烟覆盖）；entry.ts 装配流程（集成性质，用户脚本真机冒烟覆盖）。
 
-## 3. T7 双形态同装运行时提示（extension 标记注入 + userscript 检测）
+## 3. ~~T7 双形态同装运行时提示~~（✅ 2026-09-02 已落地）
 
-- **背景**：T7 因 extension 侧不存在任何现成全局标记（`window.__mbgt_extension_active__` 等）按任务书裁定跳过，禁止为完成 T7 临时修改 extension。
-- **下一轮单独立项**：extension 标记注入 + userscript 入口早期检测；检测到双形态同装时 `console.warn` 提示二选一，只警告、不自动停用/卸载，不引入冲突解决策略。
+- **落地**：extension 主世界入口（main-entry.ts）最前置 `globalThis.__mbgt_extension_active__ = true`；userscript 入口早期经 `hasExtensionMarker`（纯函数，3 项测试）检测，命中则 `console.warn('检测到扩展版同时运行，建议二选一以免重复注入')`。遵守 T7 裁定：只警告、不自动停用/卸载、不引入冲突解决策略。
 
 ## 4. 其他顺手优化想法（本轮执行过程产生，均未实现）
 

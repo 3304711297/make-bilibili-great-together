@@ -21,13 +21,18 @@ import { unsafeConsole, unsafeWindowRef } from './gm-adapter';
 import { initModuleMenu, getModuleEnabledSync } from './module-menu';
 import { createGMKVStore } from './gm-storage';
 import { createGMProbeFetch } from './gm-probe-fetch';
-import { isTopFrame } from './top-frame';
+import { isTopFrame, hasExtensionMarker } from './top-frame';
 
 // 顶层包成 async IIFE：同步先行段（无 await，document-start 硬保证——抢在 B 站脚本之前，spec §2），
 // 旧 mbgt:enabled:* 键迁移与 deferred 探测/统计/UI 一律挪到其后的非阻塞异步段
 void (async () => {
   const logger = createLogger(unsafeConsole());
   const store = createGMKVStore();
+
+  // T7 双形态同装提示（backlog #3 落地）：只警告不自动停用（T7 裁定）
+  if (hasExtensionMarker(unsafeWindowRef as unknown as Record<string, unknown>)) {
+    logger.warn('检测到扩展版同时运行，建议二选一以免重复注入');
+  }
 
   // ── 顶层框架守卫（仅核心同步派发路径，early-return 放最前）──
   // B 站同源隐藏 iframe（correspond）也命中 @match：非顶层框架只跑核心派发，

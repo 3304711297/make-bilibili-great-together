@@ -5,6 +5,9 @@ import {
   createCdnProbe, readSettingsWithBudget, startStatsFlush, mountStatsBadge, type CdnUtilHooks
 } from '@mbgt/core';
 
+// T7 双形态同装检测标记：userscript 入口早期读取该标记并 console.warn（只警告不自动停用）
+(globalThis as unknown as Record<string, unknown>).__mbgt_extension_active__ = true;
+
 const logger = createLogger(console);
 const eventTarget = globalThis as unknown as EventTarget;
 const store = createBridgedKVStore(eventTarget);
