@@ -6,14 +6,11 @@
 
 - **落地**：`ProbeFetch` 增加可选第三参 `AbortSignal`；`runProbe` 每轮建 controller，`destroy()` abort 在途请求；GM 适配层接 `handle.abort()`、扩展适配层并入内部超时 ctrl。destroyed 闸门保留（abort 结算结果照旧丢弃）。回归测试：destroy 触发 AbortSignal。
 
-## 2. userscript 侧核心纯函数测试覆盖评估
+## 2. ~~userscript 侧核心纯函数测试覆盖评估~~（✅ 2026-09-02 评估完成并补测）
 
-- **现状**：core 已有较完整测试（117 条）；userscript 入口层覆盖度待评估。
-- **评估对象**（核心纯函数优先）：
-  - 拦截点（engine hooks / 拦截适配）
-  - CDN 选优（cdnUtil 收集、候选副本化、selectMirrorUrl）
-  - 归零口径（统计 flush 单飞语义在入口层的透传）
-- **产出要求**：先评估后补测，评估结论回填本条目。
+- **评估结论**：三个目标领域的实现与测试均在 core（拦截点=engine hooks 伪 XHR/fetch 环境测试；CDN 选优=cdnUtil/probe 121 项；归零口径=flushStats 单飞语义测试），userscript 入口层只是薄接线（133 行），无可下移的核心逻辑。
+- **已补测**（`packages/userscript/tests/userscript-layer.test.ts`，5 项）：`getModuleEnabledSync` 同步三值语义（缺省 on / off / force-on）与 `createGMKVStore` GM 异步 API→KVStore 适配（往返/getAll）。`isTopFrame` 此前已有 3 项。
+- **不补测项（裁定）**：`gm-adapter`/`gm-probe-fetch`（依赖 GM_* 全局与网络，属环境接线，由真机冒烟覆盖）；entry.ts 装配流程（集成性质，用户脚本真机冒烟覆盖）。
 
 ## 3. T7 双形态同装运行时提示（extension 标记注入 + userscript 检测）
 
