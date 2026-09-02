@@ -1,0 +1,79 @@
+# 版本号驱动全自动发版：main push 时若 version.ts 版本号与已有 tag 不一致，
+# 走全量门禁（lint+test+build）+ 三处一致性断言，全绿后打 v$VER tag 并发 Release。
+# 发版语义：改版本号 + push 即发版，无人工确认环节。
+# 自包含设计：softprops/action-gh-release 会自动在当前 HEAD 创建不存在的 tag——
+# 不用 GITHUB_TOKEN push tag 触发 release.yml（GITHUB_TOKEN 触发的事件不会启动新 workflow，GitHub 防递归规则）。
+# release.yml 保留，服务手工 tag push 场景；两条路径产物一致（同一套构建+断言）。
+name: Version Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version-release
+  cancel-in-progress: false
+
+jobs:
+  version-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # 版本由根 package.json 的 packageManager 字段唯一决定，此处不得重复声明
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+
+      - name: 提取版本号
+        id: ver
+        run: |
+          VER=$(grep -oP "MBGT_VERSION = '\K[^']+" packages/core/src/version.ts)
+          test -n "$VER" || { echo "version.ts 中未找到 MBGT_VERSION"; exit 1; }
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "MBGT_VERSION=$VER"
+
+      - name: 幂等闸（tag 已存在则跳过）
+        id: gate
+        run: |
+          VER="${{ steps.ver.outputs.version }}"
+          if git rev-parse -q --verify "refs/tags/v$VER" >/dev/null; then
+            echo "v$VER 已存在：无版本变化，跳过发版"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "v$VER 不存在：检测到新版本号，进入发版门禁"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.gate.outputs.skip == 'false'
+        run: pnpm install --frozen-lockfile
+      - if: steps.gate.outputs.skip == 'false'
+        name: 全量门禁（lint + test + build）
+        run: pnpm lint && pnpm test && pnpm build
+
+      - if: steps.gate.outputs.skip == 'false'
+        name: 三处一致性断言（version.ts / meta.json / manifest.json / 产物 @version）
+        run: |
+          VER="${{ steps.ver.outputs.version }}"
+          META=$(grep -oP '"version":\s*"\K[^"]+' packages/userscript/userscript.meta.json)
+          MANIFEST=$(grep -oP '"version":\s*"\K[^"]+' packages/extension/src/manifest.json)
+          USERJS="packages/userscript/dist/make-bilibili-great-together.user.js"
+          fail() { echo "版本不一致：$1（期望 $VER）"; exit 1; }
+          test "$META" = "$VER" || fail "userscript.meta.json=$META"
+          test "$MANIFEST" = "$VER" || fail "manifest.json=$MANIFEST"
+          grep -q -e "// @version $VER\$" "$USERJS" || fail "产物 @version 与 version.ts 不一致"
+
+      - if: steps.gate.outputs.skip == 'false'
+        name: 打 tag 并发布 Release（自动 notes + 产物）
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          files: |
+            packages/userscript/dist/make-bilibili-great-together.user.js
+            packages/extension/make-bilibili-great-together-extension.zip

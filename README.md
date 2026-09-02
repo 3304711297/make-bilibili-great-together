@@ -43,6 +43,15 @@ playinfo 中出现镜像候选时自动探测（每候选小体积 range 请求�
 - 强制开启某模块：设置 `GM存储键 mbgt:override:<模块名>` 为 `force-on`（也可在设置面板操作，见下方「设置与面板」）
 - 冲突表中 `optimize-story` 两项已经真机实测确认为真实冲突（2026-09-02，追踪 Issue：[#1](https://github.com/3304711297/make-bilibili-great-together/issues/1)）
 
+## 发版流程（全自动）
+
+**改版本号 + push 到 main 即发版**，无人工确认环节：
+
+1. 同步修改三处版本号：`packages/core/src/version.ts`（单源）、`packages/userscript/userscript.meta.json`、`packages/extension/src/manifest.json`
+2. push 到 main 后，`Version Release` workflow 自动执行：检测版本号与最新 tag 不一致 → 全量门禁（lint+test+build）→ 三处一致性断言 → 打 `v<版本>` tag 并发布 Release（自动 notes + userscript/extension 产物）
+
+版本号未变化的 push 会命中幂等闸直接跳过；门禁或一致性断言失败则不 tag 不发版。手工打 tag 走 `release.yml` 的路径仍保留。
+
 ## 致谢
 
 - [SukkaW/Make-Bilibili-Great-Than-Ever-Before](https://github.com/SukkaW/Make-Bilibili-Great-Than-Ever-Before) — 核心模块与引擎架构来源（MIT）
