@@ -9,13 +9,15 @@
     "test": "vitest run",
     "lint": "eslint src"
   },
-  "dependencies": { "@mbgt/core": "workspace:*" },
+  "dependencies": {
+    "@mbgt/core": "workspace:*"
+  },
   "devDependencies": {
-    "rollup": "^4.0.0",
-    "@rollup/plugin-typescript": "^11.0.0",
     "@rollup/plugin-json": "^6.0.0",
-    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-replace": "^6.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "rollup": "^4.0.0",
     "tslib": "^2.6.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
