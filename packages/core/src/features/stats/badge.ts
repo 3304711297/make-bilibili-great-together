@@ -21,63 +21,72 @@ const BADGE_STYLE = `
   right: 14px;
   bottom: 14px;
   z-index: 2147483000;
-  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
-  background: rgba(24, 25, 28, 0.88);
+  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: rgba(24, 25, 28, 0.9);
   color: #fff;
-  padding: 6px 12px;
+  padding: 6px 13px;
   border-radius: 999px;
   cursor: pointer;
   user-select: none;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: 6px;
+  letter-spacing: -0.01em;
 }
 #${BADGE_ID}:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.02);
   border-color: #00aeec;
-  box-shadow: 0 6px 20px rgba(0, 174, 236, 0.3);
+  box-shadow: 0 6px 22px rgba(0, 174, 236, 0.35);
+}
+#${BADGE_ID}:active {
+  transform: translateY(0) scale(0.98);
 }
 #${BADGE_ID} ul {
   position: fixed;
   right: 14px;
-  bottom: 48px;
+  bottom: 50px;
   margin: 0;
-  padding: 10px 14px;
+  padding: 12px 16px;
   list-style: none;
-  background: rgba(24, 25, 28, 0.94);
+  background: rgba(24, 25, 28, 0.95);
   color: #f1f2f3;
-  border-radius: 12px;
-  max-width: 280px;
-  min-width: 160px;
+  border-radius: 14px;
+  max-width: 290px;
+  min-width: 170px;
   display: none;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
   font-size: 12px;
   line-height: 1.6;
 }
 #${BADGE_ID} ul li {
-  padding: 2px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  transition: color 0.15s ease;
 }
 #${BADGE_ID} ul li:last-child {
   border-bottom: none;
 }
+#${BADGE_ID} ul li:hover {
+  color: #00aeec;
+}
 #${BADGE_ID}.open ul {
   display: block;
-  animation: mbgt-badge-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: mbgt-badge-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes mbgt-badge-pop {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 `;
 

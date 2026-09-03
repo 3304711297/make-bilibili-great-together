@@ -56,33 +56,56 @@ export async function loadPanelData(store: KVStore, moduleNames: string[]): Prom
 
 export const PANEL_STYLE = `
 :root {
-  --mbgt-bg: rgba(255, 255, 255, 0.92);
-  --mbgt-card-bg: rgba(248, 249, 250, 0.85);
-  --mbgt-card-border: rgba(0, 0, 0, 0.06);
+  --mbgt-bg: rgba(255, 255, 255, 0.95);
+  --mbgt-card-bg: rgba(248, 249, 251, 0.88);
+  --mbgt-card-border: rgba(0, 0, 0, 0.07);
   --mbgt-text-main: #18191c;
   --mbgt-text-sub: #61666d;
   --mbgt-text-muted: #9499a0;
   --mbgt-primary: #00aeec;
   --mbgt-primary-hover: #009cd6;
+  --mbgt-primary-light: rgba(0, 174, 236, 0.12);
   --mbgt-pink: #fb7299;
   --mbgt-green: #2ac864;
   --mbgt-amber: #f59e0b;
-  --mbgt-shadow: 0 16px 36px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --mbgt-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.05);
   --mbgt-blur: blur(20px) saturate(180%);
+  --mbgt-scrollbar: rgba(148, 163, 184, 0.4);
+  --mbgt-scrollbar-hover: rgba(148, 163, 184, 0.65);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --mbgt-bg: rgba(24, 25, 28, 0.94);
-    --mbgt-card-bg: rgba(34, 36, 42, 0.75);
+    --mbgt-bg: rgba(24, 25, 28, 0.95);
+    --mbgt-card-bg: rgba(34, 36, 42, 0.82);
     --mbgt-card-border: rgba(255, 255, 255, 0.08);
     --mbgt-text-main: #f1f2f3;
     --mbgt-text-sub: #9499a0;
     --mbgt-text-muted: #71767d;
     --mbgt-primary: #00aeec;
+    --mbgt-primary-hover: #33beff;
+    --mbgt-primary-light: rgba(0, 174, 236, 0.18);
     --mbgt-pink: #fb7299;
-    --mbgt-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+    --mbgt-shadow: 0 20px 44px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.25);
+    --mbgt-scrollbar: rgba(255, 255, 255, 0.2);
+    --mbgt-scrollbar-hover: rgba(255, 255, 255, 0.35);
   }
+}
+
+html[data-dark="true"], html.dark, body[data-dark="true"], html[data-theme="dark"] {
+  --mbgt-bg: rgba(24, 25, 28, 0.95);
+  --mbgt-card-bg: rgba(34, 36, 42, 0.82);
+  --mbgt-card-border: rgba(255, 255, 255, 0.08);
+  --mbgt-text-main: #f1f2f3;
+  --mbgt-text-sub: #9499a0;
+  --mbgt-text-muted: #71767d;
+  --mbgt-primary: #00aeec;
+  --mbgt-primary-hover: #33beff;
+  --mbgt-primary-light: rgba(0, 174, 236, 0.18);
+  --mbgt-pink: #fb7299;
+  --mbgt-shadow: 0 20px 44px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.25);
+  --mbgt-scrollbar: rgba(255, 255, 255, 0.2);
+  --mbgt-scrollbar-hover: rgba(255, 255, 255, 0.35);
 }
 
 #mbgt-panel-chip {
@@ -90,15 +113,16 @@ export const PANEL_STYLE = `
   right: 14px;
   bottom: 64px;
   z-index: 2147483000;
-  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   background: rgba(24, 25, 28, 0.88);
   color: #fff;
   padding: 7px 13px;
   border-radius: 999px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
@@ -107,8 +131,11 @@ export const PANEL_STYLE = `
 }
 #mbgt-panel-chip:hover {
   transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 6px 18px rgba(0, 174, 236, 0.35);
+  box-shadow: 0 6px 20px rgba(0, 174, 236, 0.38);
   border-color: var(--mbgt-primary);
+}
+#mbgt-panel-chip:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .mbgt-panel-root {
@@ -116,7 +143,7 @@ export const PANEL_STYLE = `
   right: 14px;
   bottom: 104px;
   z-index: 2147483000;
-  width: 380px;
+  width: 390px;
   max-height: calc(85vh - 120px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -127,29 +154,53 @@ export const PANEL_STYLE = `
   backdrop-filter: var(--mbgt-blur);
   -webkit-backdrop-filter: var(--mbgt-blur);
   border: 1px solid var(--mbgt-card-border);
-  font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
-  padding: 16px;
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  padding: 18px;
   box-sizing: border-box;
   animation: mbgt-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  scrollbar-width: thin;
+  scrollbar-color: var(--mbgt-scrollbar) transparent;
+}
+
+.mbgt-panel-root::-webkit-scrollbar,
+.mbgt-textarea::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.mbgt-panel-root::-webkit-scrollbar-track,
+.mbgt-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mbgt-panel-root::-webkit-scrollbar-thumb,
+.mbgt-textarea::-webkit-scrollbar-thumb {
+  background: var(--mbgt-scrollbar);
+  border-radius: 999px;
+}
+.mbgt-panel-root::-webkit-scrollbar-thumb:hover,
+.mbgt-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--mbgt-scrollbar-hover);
 }
 
 @keyframes mbgt-fade-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Standalone options page layout overrides */
 body.mbgt-standalone-options {
-  background: #f0f2f5;
+  background: radial-gradient(circle at 50% 0%, rgba(0, 174, 236, 0.05) 0%, transparent 60%), #f4f6f9;
   margin: 0;
-  padding: 32px 16px;
+  padding: 40px 16px;
   display: flex;
   justify-content: center;
   min-height: 100vh;
   box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
-  body.mbgt-standalone-options { background: #0f1012; }
+  body.mbgt-standalone-options {
+    background: radial-gradient(circle at 50% 0%, rgba(0, 174, 236, 0.08) 0%, transparent 60%), #0f1013;
+  }
 }
 body.mbgt-standalone-options .mbgt-panel-root {
   position: static;
@@ -157,9 +208,9 @@ body.mbgt-standalone-options .mbgt-panel-root {
   max-width: 680px;
   max-height: none;
   overflow: visible;
-  padding: 24px;
+  padding: 28px;
   border-radius: 20px;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.1);
 }
 
 /* Header */
@@ -178,14 +229,16 @@ body.mbgt-standalone-options .mbgt-panel-root {
   display: flex;
   align-items: center;
   gap: 8px;
+  letter-spacing: -0.01em;
 }
 .mbgt-version-pill {
   font-size: 11px;
-  font-weight: 500;
-  background: rgba(0, 174, 236, 0.12);
+  font-weight: 600;
+  background: var(--mbgt-primary-light);
   color: var(--mbgt-primary);
   padding: 2px 8px;
   border-radius: 999px;
+  border: 1px solid rgba(0, 174, 236, 0.2);
 }
 
 /* Tab Navigation */
@@ -209,14 +262,17 @@ body.mbgt-standalone-options .mbgt-panel-root {
   color: var(--mbgt-text-sub);
   border-radius: 7px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
   user-select: none;
+}
+.mbgt-tab-btn:hover {
+  color: var(--mbgt-text-main);
 }
 .mbgt-tab-btn.active {
   background: var(--mbgt-bg);
   color: var(--mbgt-primary);
   font-weight: 600;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Section & Cards */
@@ -228,12 +284,12 @@ body.mbgt-standalone-options .mbgt-panel-root {
 .mbgt-card {
   background: var(--mbgt-card-bg);
   border: 1px solid var(--mbgt-card-border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  transition: border-color 0.15s ease;
+  border-radius: 14px;
+  padding: 13px 15px;
+  transition: all 0.2s ease;
 }
 .mbgt-card:hover {
-  border-color: rgba(0, 174, 236, 0.25);
+  border-color: rgba(0, 174, 236, 0.3);
 }
 
 /* Module Row with iOS Switch */
@@ -242,7 +298,7 @@ body.mbgt-standalone-options .mbgt-panel-root {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 0;
+  padding: 9px 0;
   border-bottom: 1px solid var(--mbgt-card-border);
 }
 .mbgt-module-item:last-child {
@@ -268,8 +324,8 @@ body.mbgt-standalone-options .mbgt-panel-root {
 .mbgt-module-desc {
   font-size: 12px;
   color: var(--mbgt-text-sub);
-  margin-top: 2px;
-  line-height: 1.4;
+  margin-top: 3px;
+  line-height: 1.45;
 }
 
 /* Switch Component */
@@ -298,6 +354,9 @@ body.mbgt-standalone-options .mbgt-panel-root {
 @media (prefers-color-scheme: dark) {
   .mbgt-slider { background-color: #475569; }
 }
+html[data-dark="true"] .mbgt-slider, html.dark .mbgt-slider, body[data-dark="true"] .mbgt-slider {
+  background-color: #475569;
+}
 .mbgt-slider:before {
   position: absolute;
   content: "";
@@ -308,7 +367,10 @@ body.mbgt-standalone-options .mbgt-panel-root {
   background-color: white;
   border-radius: 50%;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+}
+.mbgt-switch:hover .mbgt-slider {
+  box-shadow: 0 0 0 3px rgba(0, 174, 236, 0.15);
 }
 .mbgt-switch input:checked + .mbgt-slider {
   background-color: var(--mbgt-primary);
@@ -326,17 +388,20 @@ body.mbgt-standalone-options .mbgt-panel-root {
   display: inline-block;
   font-size: 11px;
   font-weight: 500;
-  padding: 1px 6px;
+  padding: 1px 7px;
   border-radius: 6px;
   line-height: 1.4;
+  letter-spacing: -0.01em;
 }
 .mbgt-badge-warning {
   background: rgba(245, 158, 11, 0.14);
   color: var(--mbgt-amber);
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 .mbgt-badge-force {
   background: rgba(251, 114, 153, 0.14);
   color: var(--mbgt-pink);
+  border: 1px solid rgba(251, 114, 153, 0.2);
 }
 .mbgt-badge-locked {
   background: rgba(148, 153, 160, 0.16);
@@ -345,6 +410,7 @@ body.mbgt-standalone-options .mbgt-panel-root {
 .mbgt-badge-success {
   background: rgba(42, 200, 100, 0.14);
   color: var(--mbgt-green);
+  border: 1px solid rgba(42, 200, 100, 0.2);
 }
 
 /* Stats Metrics Grid */
@@ -359,12 +425,19 @@ body.mbgt-standalone-options .mbgt-panel-root {
   border-radius: 12px;
   padding: 12px;
   text-align: center;
+  transition: all 0.2s ease;
+}
+.mbgt-metric-box:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 174, 236, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 174, 236, 0.08);
 }
 .mbgt-metric-num {
   font-size: 22px;
   font-weight: 700;
   color: var(--mbgt-primary);
   line-height: 1.2;
+  font-feature-settings: "tnum";
 }
 .mbgt-metric-label {
   font-size: 11px;
@@ -376,7 +449,7 @@ body.mbgt-standalone-options .mbgt-panel-root {
 .mbgt-ping-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 12px;
   font-weight: 600;
   color: var(--mbgt-green);
@@ -387,6 +460,7 @@ body.mbgt-standalone-options .mbgt-panel-root {
   border-radius: 50%;
   background: var(--mbgt-green);
   box-shadow: 0 0 6px var(--mbgt-green);
+  display: inline-block;
 }
 
 /* Actions & Buttons */
@@ -412,6 +486,10 @@ body.mbgt-standalone-options .mbgt-panel-root {
   color: #fff;
   border-color: var(--mbgt-primary);
   box-shadow: 0 4px 12px rgba(0, 174, 236, 0.25);
+  transform: translateY(-1px);
+}
+.mbgt-btn:active {
+  transform: translateY(0) scale(0.98);
 }
 .mbgt-btn-primary {
   background: var(--mbgt-primary);
@@ -424,32 +502,38 @@ body.mbgt-standalone-options .mbgt-panel-root {
 
 .mbgt-textarea {
   width: 100%;
-  height: 70px;
+  height: 75px;
   box-sizing: border-box;
-  font: 11px/1.4 Menlo, Monaco, Consolas, monospace;
-  padding: 8px;
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid var(--mbgt-card-border);
   background: var(--mbgt-card-bg);
   color: var(--mbgt-text-main);
   margin-top: 8px;
   resize: vertical;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mbgt-scrollbar) transparent;
 }
 .mbgt-textarea:focus {
   outline: none;
   border-color: var(--mbgt-primary);
+  box-shadow: 0 0 0 3px rgba(0, 174, 236, 0.15);
 }
 
 .mbgt-msg-banner {
-  margin-top: 10px;
+  margin-top: 12px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: rgba(0, 174, 236, 0.1);
+  background: var(--mbgt-primary-light);
   color: var(--mbgt-primary);
   font-size: 12px;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 6px;
+  animation: mbgt-fade-in 0.18s ease;
+  border: 1px solid rgba(0, 174, 236, 0.2);
 }
 
 .mbgt-muted {
