@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # 版本由根 package.json 的 packageManager 字段唯一决定，此处不得重复声明
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
