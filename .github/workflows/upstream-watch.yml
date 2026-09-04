@@ -27,15 +27,16 @@ jobs:
           UP_DATE=$(gh api "repos/$UPSTREAM_REPO/commits/master" --jq .commit.committer.date)
           echo "上游 HEAD: ${UP_SHA:0:7} ($UP_DATE)"
 
-          ISSUE_NUMBER=$(gh api "repos/${{ github.repository }}/issues?labels=$LABEL&state=open&per_page=1" --jq '.[0].number // empty')
+          # 获取最近一条 upstream-sync Issue（无论 open 还是 closed）中的基准 SHA
+          LAST_ISSUE=$(gh api "repos/${{ github.repository }}/issues?labels=$LABEL&state=all&per_page=1" --jq '.[0].number // empty')
           RECORDED=""
-          if [ -n "$ISSUE_NUMBER" ]; then
-            RECORDED=$(gh api "repos/${{ github.repository }}/issues/$ISSUE_NUMBER" --jq '.body' \
+          if [ -n "$LAST_ISSUE" ]; then
+            RECORDED=$(gh api "repos/${{ github.repository }}/issues/$LAST_ISSUE" --jq '.body' \
               | grep -oP '记录 SHA：\K[0-9a-f]{40}' || true)
           fi
 
           if [ "$RECORDED" = "$UP_SHA" ]; then
-            echo "记录 SHA 与上游一致，无更新，幂等空转"
+            echo "记录 SHA ($RECORDED) 与上游 ($UP_SHA) 一致，无更新，幂等空转"
             exit 0
           fi
 
@@ -48,8 +49,10 @@ jobs:
             --jq ".[] | select(.commit.committer.date > \"$SINCE\") | .sha[:7] + \" \" + (.commit.committer.date[:10]) + \" \" + (.commit.message | split(\"\n\")[0])")
           [ -n "$LOG" ] || LOG="(未取到增量清单，请直接查看上游提交历史)"
 
-          if [ -n "$ISSUE_NUMBER" ]; then
-            gh issue close "$ISSUE_NUMBER" --repo "${{ github.repository }}" \
+          # 若此前存在尚未关闭的旧 Issue，则附言后关闭，转开新 Issue
+          OPEN_ISSUE=$(gh api "repos/${{ github.repository }}/issues?labels=$LABEL&state=open&per_page=1" --jq '.[0].number // empty')
+          if [ -n "$OPEN_ISSUE" ]; then
+            gh issue close "$OPEN_ISSUE" --repo "${{ github.repository }}" \
               --comment "该批更新已评估处置完毕；检测到上游再次前进，转为追踪新一批（新 Issue 记录 SHA：$UP_SHA）。" || true
           fi
 
