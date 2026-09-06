@@ -61,7 +61,7 @@ jobs:
       # 版本由根 package.json 的 packageManager 字段唯一决定，此处不得重复声明
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v7
-        with: { node-version: 20, cache: pnpm }
+        with: { node-version: 24, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
       - name: 全量门禁（lint + test + build）
