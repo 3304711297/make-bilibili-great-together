@@ -25,7 +25,7 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
       skip: ${{ steps.gate.outputs.skip }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -55,12 +55,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       # 版本由根 package.json 的 packageManager 字段唯一决定，此处不得重复声明
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with: { node-version: 24, cache: pnpm }
 
       - run: pnpm install --frozen-lockfile
@@ -79,7 +79,7 @@ jobs:
           grep -q -e "// @version $VER\$" "$USERJS" || fail "产物 @version 与 version.ts 不一致"
 
       - name: 打 tag 并发布 Release（自动 notes + 产物）
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
         with:
           tag_name: v${{ needs.check.outputs.version }}
           target_commitish: ${{ github.sha }}
