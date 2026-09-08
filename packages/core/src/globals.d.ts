@@ -16,7 +16,8 @@ declare const GM: {
   listValues(): Promise<string[]>;
   // Violentmonkey 返回 number，Tampermonkey 返回 string
   registerMenuCommand(label: string, fn: () => void | Promise<void>, accessKeyOrOptions?: string | { autoClose?: boolean; caption?: string }): string | number;
-  unregisterMenuCommand(id: string): void;
+  // 与 registerMenuCommand 的 string | number 联合对齐（管理器间返回类型不一）
+  unregisterMenuCommand(id: string | number): void;
 }
 
 // 同步版 storage API 以独立全局形式注入沙箱（@grant GM_getValue / GM_setValue），非 GM 对象的成员
@@ -25,6 +26,7 @@ declare function GM_setValue(name: string, value: unknown): void;;
 
 // gm-probe-fetch 使用 GM_xmlhttpRequest（meta 已 @grant GM_xmlhttpRequest + @connect bilivideo.com）：
 // 本仓库用到的最小子集——Range 头 GET 探测（onload/onerror/ontimeout 三态回调）
+// 返回句柄须带 abort()：signal 取消时终止在途请求（destroy 取消，backlog #1）
 declare function GM_xmlhttpRequest(details: {
   method: string;
   url: string;
@@ -33,4 +35,4 @@ declare function GM_xmlhttpRequest(details: {
   onload?: (response: unknown) => void;
   onerror?: (response: unknown) => void;
   ontimeout?: () => void;
-}): unknown;
+}): { abort(): void };
