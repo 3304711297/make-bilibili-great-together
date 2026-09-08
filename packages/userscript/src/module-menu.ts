@@ -35,7 +35,8 @@ export function nextMenuOverride(state: 'on' | 'off' | 'force-on', autoDisabled:
 }
 
 // 已注册菜单命令 id：compat 结算后按生效状态重注册（unregister + register）以刷新标签
-const commandIds = new Map<string, unknown>();
+// 类型与 GM.registerMenuCommand 返回值一致（Violentmonkey number / Tampermonkey string）
+const commandIds = new Map<string, string | number>();
 
 function registerWithState(mod: MenuModuleInfo, autoDisabled: boolean): void {
   const state = readModuleOverrideSync(mod.name);
@@ -57,7 +58,7 @@ export function updateModuleMenuStates(mods: MenuModuleInfo[], autoDisabledNames
   for (const mod of mods) {
     const prev = commandIds.get(mod.name);
     if (prev !== undefined) {
-      try { GM.unregisterMenuCommand(prev as number); } catch { /* 管理器不支持时降级为叠加 */ }
+      try { GM.unregisterMenuCommand(prev); } catch { /* 管理器不支持时降级为叠加 */ }
     }
     registerWithState(mod, autoDisabledNames.has(mod.name));
   }
