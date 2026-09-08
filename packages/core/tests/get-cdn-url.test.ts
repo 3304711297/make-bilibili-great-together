@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { isP2PCDNDomain } from '../src/utils/get-cdn-url';
 import { createCDNUtil } from '../src/utils/get-cdn-url';
 import type { CdnUtilHooks } from '../src/utils/get-cdn-url';
+import type { MinimalConsole } from '../src/logger';
 
 describe('isP2PCDNDomain', () => {
   it('识别已知 P2P/PCDN 域名', () => {
@@ -113,8 +114,10 @@ describe('pendingProbe 首载补探（Plan 5 冻结#1）', () => {
   });
 });
 
-function logger2() {
-  // 测试桩 logger：no-explicit-any 为 warn 级，直接 as any（去掉 brief 中多余的 no-require-imports disable 注释）
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { log() {}, warn() {}, error() {}, info() {}, debug() {}, trace() {} } as any;
+function logger2(): MinimalConsole {
+  // 测试桩 logger：补 MinimalConsole 全量成员（含 group*），无需 any 断言
+  return {
+    log() {}, warn() {}, error() {}, info() {}, debug() {}, trace() {},
+    group() {}, groupCollapsed() {}, groupEnd() {}
+  };
 }
