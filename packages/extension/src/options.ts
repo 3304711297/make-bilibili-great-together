@@ -6,7 +6,7 @@ import {
 
 // 命名空间双解析 browser ?? chrome：Edge（Chromium 系）不提供 browser.*，仅 chrome.*
 interface MbgtStorageLocal {
-  get(key: string | string[] | null): Promise<{ [key: string]: any }>;
+  get<T>(key: string | string[] | null): Promise<Record<string, T>>;
   set(items: Record<string, unknown>): Promise<void>;
   remove(keys: string | string[]): Promise<void>;
 }
@@ -30,7 +30,7 @@ if (!document.getElementById('mbgt-panel-style')) {
 
 // options 页运行在扩展上下文：直连 chrome.storage.local（含 getAll，无需桥接）
 const store: KVStore = {
-  async get(key) { return (await api.storage.local.get(key))[key]; },
+  async get<T>(key: string) { return (await api.storage.local.get<T>(key))[key]; },
   async set(key, value) { await api.storage.local.set({ [key]: value }); },
   async delete(key) { await api.storage.local.remove(key); },
   async getAll() { return await api.storage.local.get(null); }
@@ -44,7 +44,7 @@ const panelModules: ModuleInfo[] = mods.map(m => ({ name: m.name, description: m
 const root = document.getElementById('app')!;
 root.textContent = '';
 try {
-  render(h(PanelApp, { store, modules: panelModules, noReload: true }) as any, root);
+  render(h(PanelApp, { store, modules: panelModules, noReload: true }), root);
 } catch (e) {
   root.textContent = '面板渲染失败（不影响核心拦截）';
   console.warn('[mbgt] options panel render failed', e);

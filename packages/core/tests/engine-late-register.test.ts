@@ -51,7 +51,7 @@ describe('CoreInstance.registerModules（晚注册）', () => {
       any(h) { h.addStyle('body{color:red}'); h.addStyle('a{color:blue}'); }
     };
     core.registerModules([mod, mod]); // 同模块注册两次，样式字符串去重后 2 条
-    const doc = (w as any).document;
+    const doc = (w as unknown as { document: Document }).document;
     expect(doc.adoptedStyleSheets.length).toBe(2);
     core.registerModules([{ name: 's2', description: '', any(h) { h.addStyle('body{color:red}'); } }]);
     expect(doc.adoptedStyleSheets.length).toBe(2); // 重复字符串不重复注入
@@ -62,9 +62,9 @@ describe('CoreInstance.registerModules（晚注册）', () => {
     const w = fakeWindow();
     const shared: ModuleMeta = { name: 'init', description: '', any(h) { h.addStyle('p{color:green}'); } };
     const core = createCore({ modules: [shared], console, unsafeWindow: w });
-    expect(((w as any).document.adoptedStyleSheets).length).toBe(1);
+    expect(((w as unknown as { document: Document }).document.adoptedStyleSheets).length).toBe(1);
     core.registerModules([shared]);
-    expect(((w as any).document.adoptedStyleSheets).length).toBe(1);
+    expect(((w as unknown as { document: Document }).document.adoptedStyleSheets).length).toBe(1);
     core.onUnload();
   });
 });

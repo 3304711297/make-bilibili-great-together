@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createMemoryKVStore, type KVStore } from '../src/platform/storage';
 import { createBridgeHost, createBridgedKVStore, BRIDGE_REQUEST_EVENT, BRIDGE_RESPONSE_EVENT } from '../src/platform/bridge';
+import type { ProbeFetch } from '../src/features/cdn-probe/probe';
 
 function wired(): { client: KVStore; hostStore: KVStore; unload: () => void } {
   const et = new EventTarget();
@@ -58,7 +59,7 @@ describe('storage bridge', () => {
     const { createBridgeHost, createBridgedProbeFetch } = await import('../src/platform/bridge');
     const et = new EventTarget();
     const probeFetch = async (url: string) => ({ ok: url.startsWith('https://'), ms: 42 });
-    createBridgeHost(createMemoryKVStore(), et, probeFetch as any);
+    createBridgeHost(createMemoryKVStore(), et, probeFetch as unknown as ProbeFetch);
     const client = createBridgedProbeFetch(et);
     const r = await client('https://upos.bilivideo.com/x.m4s', 2_000);
     expect(r).toEqual({ ok: true, ms: 42 });

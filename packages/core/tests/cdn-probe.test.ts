@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createCdnProbe, PROBE_CACHE_TTL_MS, REPROBE_DELAY_MS } from '../src/features/cdn-probe/probe';
+import { createCdnProbe, PROBE_CACHE_TTL_MS, REPROBE_DELAY_MS, type ProbeFetch } from '../src/features/cdn-probe/probe';
 import { createLogger } from '../src/logger';
 import { createMemoryKVStore, type KVStore } from '../src/platform/storage';
 
@@ -51,7 +51,7 @@ describe('cdn-probe 状态机', () => {
   it('探测中重复 ensureProbe 不启动第二次探测（fetchLike 仅调用一次）', async () => {
     // fetchLike 返回永不 resolve 的 promise：探测卡在 probing 态，第二次 ensureProbe 不得再触发探测
     const fetchLike = vi.fn(() => new Promise<{ ok: boolean; ms: number }>(() => {}));
-    const probe = createCdnProbe({ fetchLike: fetchLike as any, logger, store });
+    const probe = createCdnProbe({ fetchLike: fetchLike as unknown as ProbeFetch, logger, store });
     probe.ensureProbe(['h.bilivideo.com'], 'https://h.bilivideo.com/upgcxcode/x.m4s');
     probe.ensureProbe(['h.bilivideo.com'], 'https://h.bilivideo.com/upgcxcode/x.m4s');
     await new Promise(resolve => setTimeout(resolve, 20));
@@ -116,7 +116,7 @@ describe('destroy 生命周期 race（P2 修复回归）', () => {
     };
     let resolveFetch: (r: { ok: boolean; ms: number }) => void = () => {};
     const fetchLike = vi.fn(() => new Promise<{ ok: boolean; ms: number }>(res => { resolveFetch = res; }));
-    const probe = createCdnProbe({ fetchLike: fetchLike as any, logger, store: storeSpy });
+    const probe = createCdnProbe({ fetchLike: fetchLike as unknown as ProbeFetch, logger, store: storeSpy });
     probe.ensureProbe(['h1.bilivideo.com'], 'https://h1.bilivideo.com/upgcxcode/x.m4s');
     // 前置：fetch 在途，状态尚未落
     expect(probe.getStatus()).toBe(null);
@@ -148,7 +148,7 @@ describe('destroy 生命周期 race（P2 修复回归）', () => {
       signals.push(signal);
       return new Promise<{ ok: boolean; ms: number }>(res => { resolveFetch = res; });
     });
-    const probe = createCdnProbe({ fetchLike: fetchLike as any, logger, store });
+    const probe = createCdnProbe({ fetchLike: fetchLike as unknown as ProbeFetch, logger, store });
     probe.ensureProbe(['h1.bilivideo.com', 'h2.bilivideo.com'], 'https://h1.bilivideo.com/upgcxcode/x.m4s');
     // 前置：每个在途候选都拿到未触发的 signal
     expect(signals).toHaveLength(2);

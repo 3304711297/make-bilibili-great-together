@@ -22,7 +22,7 @@ describe('readSettingsWithBudget', () => {
 
   it('读超预算 → 回退默认值（cdnProbe=true, statsBadge=false, overrides 空）', async () => {
     // getAll 永不 resolve + 预算 5ms（真实计时，确定性）
-    const s = await readSettingsWithBudget(slowStore() as any, ['no-ad'], 5);
+    const s = await readSettingsWithBudget(slowStore(), ['no-ad'], 5);
     expect(s.cdnProbe).toBe(true);
     expect(s.statsBadge).toBe(false);
     expect(s.overrides.size).toBe(0);

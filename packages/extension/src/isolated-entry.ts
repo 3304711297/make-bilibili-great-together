@@ -11,7 +11,7 @@ try {
     ?? (globalThis as unknown as { chrome?: MbgtExtensionApi }).chrome;
   if (!browserApi) throw new Error('browser/chrome storage unavailable');
   store = {
-    async get(key) { return (await browserApi.storage.local.get(key))[key]; },
+    async get<T>(key: string) { return (await browserApi.storage.local.get<T>(key))[key]; },
     async set(key, value) { await browserApi.storage.local.set({ [key]: value }); },
     async delete(key) { await browserApi.storage.local.remove(key); },
     async getAll() { return await browserApi.storage.local.get(null); }

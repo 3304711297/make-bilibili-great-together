@@ -52,7 +52,6 @@ export default function forceEnable4K(logger: Logger): ModuleMeta {
         }
         return Reflect.apply(sessionStorageGetItem, this, [key]);
       };
-      // eslint-disable-next-line @typescript-eslint/unbound-method -- cache origin method
     })(sessionStorage.getItem);
 
     onlyCallOnce(overrideUA);

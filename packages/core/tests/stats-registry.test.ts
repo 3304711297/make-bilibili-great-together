@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createMemoryKVStore } from '../src/platform/storage';
 import type * as Registry from '../src/features/stats/registry';
+import type { KVStore } from '../src/platform/storage';
 
 // registry 是模块级单例状态（session/flushing/listeners）；vitest 同文件内
 // 各用例共享模块实例，故每个用例前 resetModules 并动态重新导入以获得干净状态。
@@ -66,9 +67,9 @@ describe('stats registry', () => {
     // 否则按归零不变式第二轮后 session 应为 3 而非 undefined，与用例末断言矛盾）
     const origSet = store.set.bind(store);
     let gapDone = false;
-    (store as any).set = async (key: string, value: unknown) => {
+    (store as { set: KVStore['set'] }).set = async <T,>(key: string, value: T) => {
       if (!gapDone) { gapDone = true; recordInterception('beacon', 3); }
-      await origSet(key, value as never);
+      await origSet(key, value);
     };
     await flushStats(store);
     expect(sessionCounts()['beacon']).toBe(3);          // 13 - 10 = 3（间隙新增保留）
@@ -85,10 +86,10 @@ describe('stats registry', () => {
     let releaseSet!: () => void;
     const gate = new Promise<void>(r => { releaseSet = r; });
     let setCalls = 0;
-    (store as any).set = async (key: string, value: unknown) => {
+    (store as { set: KVStore['set'] }).set = async <T,>(key: string, value: T) => {
       setCalls++;
       await gate;
-      return origSet(key as string, value as never);
+      return origSet(key, value);
     };
     recordInterception('beacon', 5);
     const p1 = flushStats(store);

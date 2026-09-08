@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { createCore } from '../src/engine/scheduler';
 import { getDefaultModules } from '../src/modules';
+import type { Logger } from '../src/logger';
+import type { MakeBilibiliGreatTogetherHook } from '../src/types';
 
 // 模块依赖 unsafeWindow/浏览器全局，stub 最小集合。
 // 注意：模块逻辑沿用上游写法直接引用全局 unsafeWindow（brief 适配规则 4），
@@ -52,7 +54,9 @@ beforeAll(() => {
 });
 
 describe('getDefaultModules', () => {
-  const logger = { log: vi.fn(), error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn(), trace: vi.fn(), group: vi.fn(), groupCollapsed: vi.fn(), groupEnd: vi.fn() } as any;
+  const logger = Object.fromEntries(
+    ['log', 'error', 'warn', 'info', 'debug', 'trace', 'group', 'groupCollapsed', 'groupEnd'].map(k => [k, vi.fn()])
+  ) as unknown as Logger;
 
   it('返回 15 个模块，名字与上游一致', () => {
     const mods = getDefaultModules(logger);
@@ -91,7 +95,7 @@ describe('getDefaultModules', () => {
     // 是同一绑定，defuse-storage 重定义后会自引用（上游沙盒为双域无此问题）。
     // 这里把 unsafeWindow 指向独立新对象，bare 全局保持 beforeAll 的 stub。
     const uw: Record<string, unknown> = {
-      navigator: { ...(globalThis as any).navigator },
+      navigator: { ...globalThis.navigator },
       indexedDB: { databases: async () => [] },
       localStorage: fakeStorage(),
       history: { pushState() {}, replaceState() {} },
@@ -120,27 +124,27 @@ describe('getDefaultModules', () => {
   it('force-enable-4k 的 onVideo 钩子可正常清理播放器偏好键（回归：TDZ）', () => {
     // 预置一个会被清理的键，确保 hook() 实际触达 OUR_KEYS 分支
     // （localStorage 为空时 hook 不会引用 OUR_KEYS，这就是此前 22 用例未抓住 TDZ 的原因）
-    (globalThis as any).localStorage.setItem('bilibili_player_force_src', '1');
+    globalThis.localStorage.setItem('bilibili_player_force_src', '1');
     // overrideUA 会以 configurable:false 写 navigator.userAgent（模块按上游设计每页面只跑一次），
     // 指向独立新对象避免与前面用例留下的只读属性冲突
     vi.stubGlobal('unsafeWindow', { navigator: { maxTouchPoints: 0 } });
     const mod = getDefaultModules(logger).find(m => m.name === 'force-enable-4k')!;
-    const h = { addStyle: vi.fn(), onBeforeFetch: vi.fn(), onXhrOpen: vi.fn(), onAfterXhrOpen: vi.fn(), onXhrResponse: vi.fn(), onResponse: vi.fn(), onlyCallOnce: (fn: () => void) => fn() } as any;
-    expect(() => mod.onVideo?.(h)).not.toThrow();
-    expect((globalThis as any).localStorage.getItem('bilibili_player_force_src')).toBe(null);
+    const h: Partial<MakeBilibiliGreatTogetherHook> = { addStyle: vi.fn(), onBeforeFetch: vi.fn(), onXhrOpen: vi.fn(), onAfterXhrOpen: vi.fn(), onXhrResponse: vi.fn(), onResponse: vi.fn(), onlyCallOnce: (fn: () => void) => fn() };
+    expect(() => mod.onVideo?.(h as MakeBilibiliGreatTogetherHook)).not.toThrow();
+    expect(globalThis.localStorage.getItem('bilibili_player_force_src')).toBe(null);
   });
 
   it('defuse-spyware 将 navigator.sendBeacon 改为恒真', () => {
     const beacon = vi.fn();
-    const navObj = { ...(globalThis as any).navigator, sendBeacon: beacon };
+    const navObj = { ...globalThis.navigator, sendBeacon: beacon };
     // 模块按上游设计为每页面运行一次（defineReadonlyProperty 以 configurable:false 写入全局），
     // 这里把 unsafeWindow 指向独立的新对象，避免与前面用例已写入 globalThis 的只读属性冲突
     vi.stubGlobal('navigator', navObj);
     vi.stubGlobal('unsafeWindow', { navigator: navObj });
     const mod = getDefaultModules(logger).find(m => m.name === 'defuse-spyware')!;
-    const h = { addStyle: vi.fn(), onBeforeFetch: vi.fn(), onXhrOpen: vi.fn(), onlyCallOnce: vi.fn() } as any;
-    mod.any?.(h);
-    expect((globalThis.navigator as any).sendBeacon()).toBe(true);
+    const h: Partial<MakeBilibiliGreatTogetherHook> = { addStyle: vi.fn(), onBeforeFetch: vi.fn(), onXhrOpen: vi.fn(), onlyCallOnce: vi.fn() };
+    mod.any?.(h as MakeBilibiliGreatTogetherHook);
+    expect((globalThis.navigator as Navigator & { sendBeacon: () => boolean }).sendBeacon()).toBe(true);
   });
 
   it('defuse-storage 的 mock length 读闭包原始 storage，不自引用（真机冒烟回归：视频页炸栈）', () => {
@@ -154,7 +158,7 @@ describe('getDefaultModules', () => {
     for (let i = 0; i < 5; i++) fakeB.setItem(`k${i}`, String(i));
     vi.stubGlobal('localStorage', fakeA);
     const uw: Record<string, unknown> = {
-      navigator: { ...(globalThis as any).navigator },
+      navigator: { ...globalThis.navigator },
       indexedDB: { databases: async () => [] },
       localStorage: fakeB,
       HTMLMediaElement: class {},
@@ -163,9 +167,9 @@ describe('getDefaultModules', () => {
     };
     vi.stubGlobal('unsafeWindow', uw);
     const mod = getDefaultModules(logger).find(m => m.name === 'disable-storage')!;
-    const h = { addStyle: vi.fn(), onBeforeFetch: vi.fn(), onXhrOpen: vi.fn(), onXhrResponse: vi.fn(), onResponse: vi.fn(), onlyCallOnce: vi.fn() } as any;
-    mod.any?.(h);
-    const mocked = (uw as any).localStorage;
+    const h: Partial<MakeBilibiliGreatTogetherHook> = { addStyle: vi.fn(), onBeforeFetch: vi.fn(), onXhrOpen: vi.fn(), onXhrResponse: vi.fn(), onResponse: vi.fn(), onlyCallOnce: vi.fn() };
+    mod.any?.(h as MakeBilibiliGreatTogetherHook);
+    const mocked = uw.localStorage as ReturnType<typeof fakeStorage>;
     expect(mocked).not.toBe(fakeB); // mock 已装上
     expect(() => mocked.length).not.toThrow();
     expect(mocked.length).toBe(5); // store.size(0) + orignal(5)，而非 fakeA 的 2

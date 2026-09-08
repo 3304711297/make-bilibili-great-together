@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 // 以 Step 1 探明的实际导出为准，典型形态：
 import { isP2PCDNDomain } from '../src/utils/get-cdn-url';
 import { createCDNUtil } from '../src/utils/get-cdn-url';
+import type { CdnUtilHooks } from '../src/utils/get-cdn-url';
 
 describe('isP2PCDNDomain', () => {
   it('识别已知 P2P/PCDN 域名', () => {
@@ -57,7 +58,7 @@ describe('pendingProbe 首载补探（Plan 5 冻结#1）', () => {
   it('probe 缺失时 parse 记 pending；回放触发 ensureProbe；重复回放幂等', () => {
     const calls: { hosts: string[]; sample: string }[] = [];
     const probe = { ensureProbe: (hosts: string[], sample: string) => calls.push({ hosts, sample }), getBestHost: () => null, getStatus: () => null, destroy: () => {} };
-    const hooksRef: { current?: any } = {};
+    const hooksRef: { current?: CdnUtilHooks } = {};
     const util = createCDNUtil(logger2(), hooksRef);
     util.saveAndParsePlayerInfo(makePlayinfo(['upos-sz-mirrortest01.bilivideo.com']), 't1'); // probe 缺失 → pending
     util.replayPendingProbe(); // probe 仍缺失 → no-op
@@ -73,7 +74,7 @@ describe('pendingProbe 首载补探（Plan 5 冻结#1）', () => {
   it('多次 playinfo 只保留最新 pending（覆盖式）', () => {
     const calls: string[] = [];
     const probe = { ensureProbe: (_h: string[], sample: string) => calls.push(sample), getBestHost: () => null, getStatus: () => null, destroy: () => {} };
-    const hooksRef: { current?: any } = {};
+    const hooksRef: { current?: CdnUtilHooks } = {};
     const util = createCDNUtil(logger2(), hooksRef);
     util.saveAndParsePlayerInfo(makePlayinfo(['upos-sz-mirrortest01.bilivideo.com']), 't1');
     util.saveAndParsePlayerInfo(makePlayinfo(['upos-sz-mirrortest02.bilivideo.com']), 't2');
