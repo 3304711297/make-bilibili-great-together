@@ -1,8 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createCore } from '../src/engine/scheduler';
 import { startCompatProbe } from '../src/platform/compat-types';
+import type { ProbeResult } from '../src/platform/compat-types';
 import { createMemoryKVStore, readModuleOverrides, COMPAT_STATUS_KEY } from '../src/platform/storage';
 import { resolveConflicts } from '../src/features/compat/resolve';
+import type { MakeBilibiliGreatTogetherHook, ModuleMeta } from '../src/types';
+
+/** COMPAT_STATUS_KEY 落盘结构的本地类型（entry 侧写出的契约面） */
+interface StoredCompatStatus {
+  family: ProbeResult['family'];
+  extensions: string[];
+  generic: boolean;
+  autoDisabled: { module: string; extension: string; feature: string }[];
+  settledAt: number;
+}
 
 // 结构复用 fakeScheduler（compat-probe）与 fakeWindow（engine-late-register）的既有写法，勿 import 测试文件
 
@@ -50,14 +61,14 @@ describe('compat 端到端：立即注册 + 延迟注册 + 状态落盘', () => 
 
     // 模拟 entry 的装配逻辑（与 Task 6 Step 3 的 entry.ts 一致）
     const allModules = [
-      { name: 'net-module', description: '', any(h: any) { h.onBeforeFetch(() => new Response('blocked-by-net')); } },
-      { name: 'no-ad', description: '', conflicts: [{ extension: 'bewlycat', feature: 'blockAds / 首页重构' }], any(h: any) { h.addStyle('.ad{display:none}'); } }
-    ] as any[];
+      { name: 'net-module', description: '', any(h: MakeBilibiliGreatTogetherHook) { h.onBeforeFetch(() => new Response('blocked-by-net')); } },
+      { name: 'no-ad', description: '', conflicts: [{ extension: 'bewlycat', feature: 'blockAds / 首页重构' }], any(h: MakeBilibiliGreatTogetherHook) { h.addStyle('.ad{display:none}'); } }
+    ] satisfies Partial<ModuleMeta>[] as ModuleMeta[];
     const immediate = allModules.filter(m => !m.conflicts?.length);
     const deferred = allModules.filter(m => m.conflicts?.length);
     const core = createCore({ modules: immediate, console, unsafeWindow: w });
 
-    let probeResult: any = null;
+    let probeResult: ProbeResult | null = null;
     const s = fakeScheduler();
     startCompatProbe({
       snapshot: () => probeResult,
@@ -73,7 +84,7 @@ describe('compat 端到端：立即注册 + 延迟注册 + 状态落盘', () => 
     const forceOnOverrides = new Set([...overrides.entries()].filter(([, v]) => v === 'force-on').map(([n]) => n));
     const { enabled, autoDisabled } = resolveConflicts(deferred, probeResult, menuDisabled, forceOnOverrides);
     core.registerModules(enabled);
-    await store.set(COMPAT_STATUS_KEY, { family: probeResult.family, extensions: probeResult.extensions.map((e: any) => e.id), generic: probeResult.generic, autoDisabled, settledAt: Date.now() });
+    await store.set(COMPAT_STATUS_KEY, { family: probeResult.family, extensions: probeResult.extensions.map(e => e.id), generic: probeResult.generic, autoDisabled, settledAt: Date.now() });
 
     expect(enabled).toHaveLength(0); // no-ad 被 BewlyCat 冲突禁用
     expect(autoDisabled).toEqual([{ module: 'no-ad', extension: 'bewlycat', feature: 'blockAds / 首页重构' }]);
@@ -81,7 +92,7 @@ describe('compat 端到端：立即注册 + 延迟注册 + 状态落盘', () => 
     const res = await w.fetch('https://www.bilibili.com/x');
     expect(await res.text()).toBe('blocked-by-net');
     expect(spy).not.toHaveBeenCalled(); // 原始 fetch 未被触达
-    const status = await store.get<any>(COMPAT_STATUS_KEY);
+    const status = (await store.get<StoredCompatStatus>(COMPAT_STATUS_KEY))!;
     expect(status.autoDisabled).toHaveLength(1);
     expect(status.extensions).toEqual(['bewlycat']);
     core.onUnload();

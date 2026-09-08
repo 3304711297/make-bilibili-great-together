@@ -3,29 +3,32 @@ import { it, expect, beforeAll } from 'vitest';
 import { getDefaultModules } from '../src/modules';
 import { sessionCounts } from '../src/features/stats/registry';
 import { createLogger } from '../src/logger';
+import type { MakeBilibiliGreatTogetherHook } from '../src/types';
 
 const logger = createLogger(console);
 
 beforeAll(() => {
   // 单全局域最小 stub（与 modules.test.ts 同策略，但用 happy-dom 真对象）
-  (globalThis as any).unsafeWindow = globalThis;
-  (globalThis as any).indexedDB = { databases: async () => [], open: () => ({}) };
-  (globalThis as any).MediaSource = class { static isTypeSupported(type: string) { return type.includes('avc'); } };
-  (globalThis as any).CSSStyleSheet = class { replaceSync() {} };
+  Object.assign(globalThis, {
+    unsafeWindow: globalThis,
+    indexedDB: { databases: async () => [], open: () => ({}) },
+    MediaSource: class { static isTypeSupported(type: string) { return type.includes('avc'); } },
+    CSSStyleSheet: class { replaceSync() {} }
+  });
 });
 
-function spyHook() {
+function spyHook(): Partial<MakeBilibiliGreatTogetherHook> {
   return {
     addStyle: () => {}, onBeforeFetch: () => {}, onResponse: () => {},
     onXhrOpen: () => {}, onAfterXhrOpen: () => {}, onXhrResponse: () => {},
     onlyCallOnce: (fn: () => void) => fn()
-  } as any;
+  };
 }
 
 it('disable-av1：av01 canPlayType 计入 av1-blocked', () => {
   const before = sessionCounts()['av1-blocked'] ?? 0;
   const mod = getDefaultModules(logger).find(m => m.name === 'disable-av1')!;
-  mod.any?.(spyHook());
+  mod.any?.(spyHook() as MakeBilibiliGreatTogetherHook);
   expect(document.createElement('video').canPlayType('video/mp4; codecs="av01.0.05M.08"')).toBe('');
   expect(sessionCounts()['av1-blocked']).toBe(before + 1);
 });
@@ -33,14 +36,14 @@ it('disable-av1：av01 canPlayType 计入 av1-blocked', () => {
 it('defuse-spyware：sendBeacon 假实现计入 beacon', () => {
   const before = sessionCounts()['beacon'] ?? 0;
   const mod = getDefaultModules(logger).find(m => m.name === 'defuse-spyware')!;
-  mod.any?.(spyHook());
-  expect((globalThis as any).navigator.sendBeacon('https://data.bilibili.com/x', 'p')).toBe(true);
+  mod.any?.(spyHook() as MakeBilibiliGreatTogetherHook);
+  expect(globalThis.navigator.sendBeacon('https://data.bilibili.com/x', 'p')).toBe(true);
   expect(sessionCounts()['beacon']).toBe(before + 1);
 });
 
 it('no-p2p：替换 URL 计入 p2p-replaced，未改写不计', () => {
   const mod = getDefaultModules(logger).find(m => m.name === 'no-p2p')!;
-  mod.any?.(spyHook());
+  mod.any?.(spyHook() as MakeBilibiliGreatTogetherHook);
   const before = sessionCounts()['p2p-replaced'] ?? 0;
   // 经 HTMLMediaElement.src setter 注入一个 mcdn 类型 URL（必被改写）
   const v = document.createElement('video');

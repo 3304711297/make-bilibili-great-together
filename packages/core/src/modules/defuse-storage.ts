@@ -34,7 +34,6 @@ export default function defuseStorage(logger: Logger): ModuleMeta {
           logger.trace('IndexedDB opened!', { name, version });
           return origOpen.call(this, name, version);
         });
-        // eslint-disable-next-line @typescript-eslint/unbound-method -- override native method
       })(unsafeWindow.indexedDB.open);
 
       ((orignalLocalStorage) => {

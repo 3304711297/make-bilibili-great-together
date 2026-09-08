@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createBewlyFamilySnapshot } from '../src/features/compat/snapshot';
+import type { ProbeResult } from '../src/platform/compat-types';
 
 function fakeDoc(
   hosts: { version: string | null; shadowBewlycat?: boolean; shadowAvemujica?: boolean; noShadowRoot?: boolean }[],
@@ -45,7 +46,7 @@ describe('createBewlyFamilySnapshot（三态契约与独占分层指纹）', () 
 
   it('独占标记命中：通过专属 GitHub 仓库链接精准识别 BewlyCat', () => {
     const snap = createBewlyFamilySnapshot(fakeDoc([{ version: '1.7.8', shadowBewlycat: false, shadowAvemujica: false }], { keleusLink: true }));
-    const r = snap() as any;
+    const r = snap() as ProbeResult;
     expect(r.family).toBe('bewly');
     expect(r.extensions).toEqual([{ id: 'bewlycat', version: '1.7.8' }]);
     expect(r.generic).toBe(false);
@@ -53,18 +54,18 @@ describe('createBewlyFamilySnapshot（三态契约与独占分层指纹）', () 
 
   it('独占标记命中：通过专属 WAR Logo 路径精准识别 AveMujica', () => {
     const snap = createBewlyFamilySnapshot(fakeDoc([{ version: '1.8.32', shadowBewlycat: false, shadowAvemujica: false }], { aveLogo: true }));
-    const r = snap() as any;
+    const r = snap() as ProbeResult;
     expect(r.extensions).toEqual([{ id: 'avemujica', version: '1.8.32' }]);
     expect(r.generic).toBe(false);
   });
 
   it('启发式层级：无独占 UI 时按版本号主支精准识别（1.8.x → AveMujica, 1.7.x → BewlyCat）', () => {
     const snapAve = createBewlyFamilySnapshot(fakeDoc([{ version: '1.8.32', shadowBewlycat: false, shadowAvemujica: false }], {}));
-    const rAve = snapAve() as any;
+    const rAve = snapAve() as ProbeResult;
     expect(rAve.extensions).toEqual([{ id: 'avemujica', version: '1.8.32' }]);
 
     const snapBewly = createBewlyFamilySnapshot(fakeDoc([{ version: '1.7.8', shadowBewlycat: false, shadowAvemujica: false }], {}));
-    const rBewly = snapBewly() as any;
+    const rBewly = snapBewly() as ProbeResult;
     expect(rBewly.extensions).toEqual([{ id: 'bewlycat', version: '1.7.8' }]);
   });
 
@@ -76,7 +77,7 @@ describe('createBewlyFamilySnapshot（三态契约与独占分层指纹）', () 
 
   it('双标记同时在场→extensions 顺序固定 bewlycat 在前', () => {
     const snap = createBewlyFamilySnapshot(fakeDoc([{ version: '1.7.8', shadowBewlycat: true, shadowAvemujica: true }], { bewlycat: true, avemujica: true }));
-    const r = snap() as any;
+    const r = snap() as ProbeResult;
     expect(r.extensions).toEqual([{ id: 'bewlycat', version: '1.7.8' }, { id: 'avemujica', version: '1.7.8' }]);
     expect(r.generic).toBe(false);
   });

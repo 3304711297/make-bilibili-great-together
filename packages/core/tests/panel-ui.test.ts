@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { PanelApp, mountFloatingPanel, loadPanelData } from '../src/features/panel/panel';
 import { h, render } from 'preact';
 import { createMemoryKVStore } from '../src/platform/storage';
+import type { KVStore } from '../src/platform/storage';
 import { OVERRIDE_PREFIX } from '../src/platform/storage';
 
 const modules = [
@@ -26,7 +27,7 @@ describe('PanelApp 交互', () => {
     const store = createMemoryKVStore();
     const container = document.createElement('div');
     document.body.appendChild(container);
-    render(h(PanelApp, { store, modules }) as any, container);
+    render(h(PanelApp, { store, modules }), container);
     await new Promise(r => setTimeout(r, 10)); // 等异步 load
     // 取消勾选 → 'off'
     const checkbox = container.querySelector<HTMLInputElement>('input[data-module="defuse-spyware"]')!;
@@ -51,7 +52,7 @@ describe('PanelApp options 形态', () => {
       { name: 'defuse-spyware', description: '反跟踪', locked: true },
       { name: 'no-ad', description: '去广告' }
     ];
-    render(h(PanelApp, { store, modules: optionsModules }) as any, container);
+    render(h(PanelApp, { store, modules: optionsModules }), container);
     await new Promise(r => setTimeout(r, 10)); // 等异步 load
     const locked = container.querySelector<HTMLInputElement>('input[data-module="defuse-spyware"]')!;
     expect(locked.disabled).toBe(true);
@@ -78,8 +79,8 @@ describe('面板 2s 轮询（Plan 5）', () => {
     document.body.appendChild(container);
     let gets = 0;
     const origGet = store.get.bind(store);
-    (store as any).get = async (k: string) => { gets++; return origGet(k); };
-    render(h(PanelApp, { store, modules }) as any, container);
+    (store as { get: KVStore['get'] }).get = async <T,>(k: string) => { gets++; return origGet<T>(k); };
+    render(h(PanelApp, { store, modules }), container);
     const loadOnce = () => gets; // 一次 loadPanelData = 7 次 get
     await vi.advanceTimersByTimeAsync(20);
     const afterOpen = loadOnce();
@@ -88,13 +89,13 @@ describe('面板 2s 轮询（Plan 5）', () => {
     const afterTick1 = loadOnce();
     expect(afterTick1).toBeGreaterThan(afterOpen); // 2s 后自动刷新
     // 读失败：get 抛错后 UI 保留旧数据（不清空），下一轮继续
-    (store as any).get = async () => { throw new Error('boom'); };
+    (store as { get: KVStore['get'] }).get = async () => { throw new Error('boom'); };
     await vi.advanceTimersByTimeAsync(2_100);
     expect(container.textContent).toContain('模块开关');
     // 关闭：render(null) 卸载 → cleanup 停止轮询（数值快照断言，非函数引用）
     const frozenCount = gets;
-    render(null as any, container);
-    (store as any).get = async (k: string) => { gets++; return origGet(k); };
+    render(null, container);
+    (store as { get: KVStore['get'] }).get = async <T,>(k: string) => { gets++; return origGet<T>(k); };
     await vi.advanceTimersByTimeAsync(6_000);
     expect(gets).toBe(frozenCount); // 关闭后零调用
     vi.useRealTimers();

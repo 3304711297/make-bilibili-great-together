@@ -810,7 +810,7 @@ export function mountFloatingPanel(opts: { store: KVStore; modules: ModuleInfo[]
       root = document.createElement('div');
       root.id = 'mbgt-panel-root';
       document.body?.appendChild(root);
-      render(h(PanelApp, { store: opts.store, modules: opts.modules }) as any, root);
+      render(h(PanelApp, { store: opts.store, modules: opts.modules }), root);
     });
     document.body?.appendChild(chip);
   } catch (e) {

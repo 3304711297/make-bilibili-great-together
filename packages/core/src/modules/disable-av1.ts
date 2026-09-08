@@ -28,10 +28,8 @@ export default function disableAV1(logger: Logger): ModuleMeta {
           };
           return origCanPlayType.call(this, type);
         };
-        // eslint-disable-next-line @typescript-eslint/unbound-method -- override native method
       })(HTMLMediaElement.prototype.canPlayType);
       ((origIsTypeSupported) => {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- can be nullable
         if (origIsTypeSupported == null) return false;
 
         unsafeWindow.MediaSource.isTypeSupported = function (type) {
@@ -42,7 +40,6 @@ export default function disableAV1(logger: Logger): ModuleMeta {
           }
           return origIsTypeSupported.call(this, type);
         };
-        // eslint-disable-next-line @typescript-eslint/unbound-method -- override native method
       })(unsafeWindow.MediaSource.isTypeSupported);
     }
   };
