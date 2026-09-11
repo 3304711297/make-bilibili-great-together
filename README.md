@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/3304711297/make-bilibili-great-together/releases"><img src="https://img.shields.io/github/v/release/3304711297/make-bilibili-great-together?style=flat-square&color=blue&label=Latest%20Release" alt="Latest Release"></a>
-  <a href="https://github.com/3304711297/make-bilibili-great-together/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/3304711297/make-bilibili-great-together/release.yml?branch=main&label=CI%20Build&style=flat-square" alt="CI Status"></a>
+  <a href="https://github.com/3304711297/make-bilibili-great-together/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/3304711297/make-bilibili-great-together/ci.yml?branch=main&label=CI%20Build&style=flat-square" alt="CI Status"></a>
   <img src="https://img.shields.io/badge/Form-Userscript%20%7C%20Chrome%20MV3-orange?style=flat-square" alt="Form">
   <img src="https://img.shields.io/badge/Compatibility-BewlyCat%20%7C%20AveMujica-526CFE?style=flat-square" alt="Coexistence">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
@@ -98,7 +98,74 @@ pnpm build
 pnpm test
 ```
 
-* **全自动发版机制**：只需修改 `packages/core/src/version.ts`、`userscript.meta.json` 与 `manifest.json` 中的版本号并 push 到 `main` 分支，GitHub Actions 将全自动触发一致性门禁并生成对应 Release。
+* **全自动发版机制**：版本号单源写在 `packages/core/src/version.ts` 的 `MBGT_VERSION` 常量中。push 到 `main` 分支后，`version-release.yml` 会自动比对当前版本号与已有 tag；若为新版本则跑全量门禁（lint + test + build）与三处一致性断言（`version.ts` / `userscript.meta.json` / `extension` 的 `manifest.json` 及产物 `@version`），全绿后自动打 `v$VER` tag 并发布 Release。机制幂等：tag 已存在则整条流水线跳过，不会重复发版。
+
+---
+
+## 📂 项目结构
+
+```text
+make-bilibili-great-together/
+├── packages/
+│   ├── core/               # 共享引擎（双形态共用）
+│   │   └── src/
+│   │       ├── engine/     # 拦截与选优核心引擎
+│   │       ├── features/   # 功能模块
+│   │       ├── modules/    # 各功能实现
+│   │       ├── platform/   # 平台适配层
+│   │       ├── utils/      # 通用工具
+│   │       └── version.ts  # 版本号单源（MBGT_VERSION）
+│   ├── extension/          # Chrome / Edge MV3 扩展
+│   │   └── src/manifest.json   # 产物：dist/ + make-bilibili-great-together-extension.zip
+│   └── userscript/         # Userscript 油猴脚本
+│       └── userscript.meta.json  # 产物：dist/*.user.js
+├── package.json
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+└── eslint.config.js
+```
+
+- 当前版本 **0.3.5**，最低浏览器要求 **Chromium 111+**（见 `manifest.json` 的 `minimum_chrome_version`）。
+
+---
+
+## ❓ 常见问题 (FAQ)
+
+<details>
+<summary><strong>Userscript 和 MV3 扩展能同时装吗？</strong></summary>
+
+**不能。** 两者底层都会在主世界包装 `fetch` / `XHR`，同时启用会导致重复拦截与不可预期的冲突，二选一即可。日常推荐 MV3 扩展。
+
+</details>
+
+<details>
+<summary><strong>扩展安装时提示版本过低？</strong></summary>
+
+需要 **Chromium 111+** 内核（Edge / Chrome 均可满足）。请升级浏览器到该版本以上，或改用 Userscript 方案。
+
+</details>
+
+<details>
+<summary><strong>CDN 选优测速失败会怎样？</strong></summary>
+
+不会影响播放。测速请求 2 秒超时后会自动淘汰慢节点；若全部节点测速失败，则回退默认线路正常播放。
+
+</details>
+
+<details>
+<summary><strong>配置如何跨设备同步？</strong></summary>
+
+设置面板支持一键导出 / 导入 JSON 配置文件，导出后在新设备上导入即可完成同步。
+
+</details>
+
+<details>
+<summary><strong>设置面板在哪里打开？</strong></summary>
+
+- **MV3 扩展**：点击浏览器工具栏图标直接呼出 Options 设置页；
+- **Userscript**：点击页面右下角的 `⚙ MBGT` 悬浮胶囊面板。
+
+</details>
 
 ---
 
