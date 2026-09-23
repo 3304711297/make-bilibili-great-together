@@ -76,10 +76,30 @@
 当视频播放信息（`playinfo`）中包含多个 CDN 镜像时，引擎自动发起微小体积的 HTTP Range 测速请求（2 秒超时自动淘汰），并锁定延迟最优的服务器节点。结果自动缓存 5 分钟，避免频繁重试。
 
 ### 3. 📊 实时拦截与统计落盘
-全量统计 sendBeacon 假实现、上报接口拦截、localStorage 阻断写、P2P 替换及 WebRTC 阻断次数。数据采用归零口径与 30 秒节流落盘机制，保证跨会话精准累加且零性能损耗。
+全量统计 sendBeacon 拦截、上报接口拦截、DNR 网络层阻断、P2P 替换及 WebRTC 阻断次数。数据采用归零口径与 30 秒节流落盘机制，保证跨会话精准累加且零性能损耗。
 
 ### 4. 🤝 与 BewlyCat / AveMujica 无缝共存
 内置共存感知守卫。当检测到页面已加载 Bewly 系列扩展时，会自动停用与其重叠的页面美化、广告过滤模块，保留底层网络反跟踪、反 PCDN 核心能力，实现 100% 互补运行。
+
+### 5. 🛡️ 精简重构与健康模块清单 (v0.4.0 升级)
+项目历经针对现代 B 站（播放器 v3/v4、全站 Token 鉴权签名与 Chrome MV3 规范）的深度交叉审查，全面剔除上游未经实测的陈旧 hack，形成 12 个高可靠度健康核心模块：
+
+| 分类 | 模块名 | 作用与现代适配规范 |
+| :--- | :--- | :--- |
+| **隐私与反跟踪** | `defuse-spyware` | 拦截 sendBeacon，阻断 `data.bilibili.com`、`cm.bilibili.com` 等打点风暴 |
+| | `remove-useless-url-params` | 清理 `spm_id_from`、`vd_source`、`trackid`、`share_*` 等追踪参数，保全业务路由参数 |
+| **反 PCDN 与网络增强** | `no-p2p` | Mock PCDN SDK，智能重定向 PCDN 镜像到官方高质量 CDN，集成延迟测速优选 |
+| | `no-webrtc` | 模拟 RTCPeerConnection / DataChannel，切断 B 站直播/视频后台 WebRTC 上传通道 |
+| **播放体验** | `disable-av1` | 编码偏好策略，在 canPlayType / MSE 拦截 av01 编码，防止老旧 CPU 软解卡死 |
+| | `enhance-live` | 直播 EvaRenderer 图层修复与防降质容错，内置 MV3 环境降级保护，绝不破坏鉴权签名 |
+| | `player-video-fit` | 播放器裁切模式（object-fit: cover），内置 6 秒超时防泄漏与防重入机制 |
+| **页面清爽与排版** | `no-ad` | 纯净 CSS 隐藏广告卡片与 adblock-tips，彻底杜绝数据污染与恶搞链接 |
+| | `optimize-homepage` | 极简 CSS 隐藏首页广告与空卡片 |
+| | `optimize-story` | 动态页面宽屏优化与幂等切换按钮 |
+| | `use-system-fonts` | 强制使用系统 UI 默认字体栈，保留图标与特殊符号字体 |
+| | `fix-copy-in-cv` | 专栏/opus 复制解除限制，净化自动注入的版权信息尾巴 |
+
+> 💡 **已剔除的历史淘汰模块**：`defuse-storage`（全局篡改 Storage 且破坏 clear 语义）、`force-enable-4k`（伪造 Safari UA 与触控点导致 Chromium 现代流冲突）、`remove-black-backdrop-filter`（临时哀悼日 hack，常态下无意义）。代码纯减 248 行，彻底消灭运行时崩溃点。
 
 ---
 
@@ -125,7 +145,7 @@ make-bilibili-great-together/
 └── eslint.config.js
 ```
 
-- 当前版本 **0.3.5**，最低浏览器要求 **Chromium 111+**（见 `manifest.json` 的 `minimum_chrome_version`）。
+- 当前版本 **0.4.0**，最低浏览器要求 **Chromium 111+**（见 `manifest.json` 的 `minimum_chrome_version`）。
 
 ---
 
