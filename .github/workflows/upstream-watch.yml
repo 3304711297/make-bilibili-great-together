@@ -5,7 +5,8 @@ name: Upstream Watch
 
 on:
   schedule:
-    - cron: '0 2 * * *' # 每日 UTC 02:00（北京 10:00）
+    # 每天 UTC 01:00、07:00（北京时间 09:00、15:00）运行
+    - cron: '0 1,7 * * *'
   workflow_dispatch:
 
 permissions:
