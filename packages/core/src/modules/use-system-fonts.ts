@@ -14,8 +14,15 @@ export default function useSystemFonts(_logger: Logger): ModuleMeta {
       { extension: 'avemujica', feature: 'customizeFont（默认启用自家推荐字体）' }
     ],
     any({ addStyle }) {
-      document.querySelectorAll('link[href*="/jinkela/long/font/"]').forEach(x => x.remove());
-      addStyle(css`html, body { font-family: system-ui !important; }`);
+      try {
+        document.querySelectorAll('link[href*="/jinkela/long/font/"]').forEach(x => {
+          // 仅过滤 HarmonyOS/字重等 WebFont，避免误删图标与特殊符号字体
+          if (x.getAttribute('href')?.includes('HarmonyOS') || x.getAttribute('href')?.includes('font')) {
+            x.remove();
+          }
+        });
+      } catch { /* 忽略 DOM 阶段读取异常 */ }
+      addStyle(css`html, body, #app { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important; }`);
     }
   };
 }

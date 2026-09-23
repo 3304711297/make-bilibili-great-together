@@ -59,7 +59,10 @@ export default function enhanceLive(logger: Logger): ModuleMeta {
         // if (mcdnRegexp.test(url) && disableMcdn) {
         //   return Promise.reject();
         // }
-        if (qualityRegexp.test(url)) {
+        // 鉴权安全防线：若 URL 包含鉴权签名（wsSecret / wsTime / token / uparams），
+        // 篡改 URL 路径会导致服务端 403 签名失效，故仅在无签名参数时安全尝试清晰度改写
+        const hasSignature = url.includes('wsSecret=') || url.includes('wsTime=') || url.includes('token=') || url.includes('uparams=');
+        if (!hasSignature && qualityRegexp.test(url)) {
           finalUrl = url
             .replace(qualityRegexp, '$1')
             .replaceAll(hevcRegexp, '$1');
@@ -68,7 +71,7 @@ export default function enhanceLive(logger: Logger): ModuleMeta {
 
           urlMap.set(finalUrl, url);
         }
-        if (smtcdnsRegexp.test(finalUrl)) {
+        if (!hasSignature && smtcdnsRegexp.test(finalUrl)) {
           finalUrl = finalUrl.replace(smtcdnsRegexp, '$1');
           logger.info('drop smtcdns', url, '->', finalUrl);
         }
@@ -87,16 +90,18 @@ export default function enhanceLive(logger: Logger): ModuleMeta {
           if (forceHighestQuality && errorCounter.getErrorCount() >= 5) {
             forceHighestQuality = false;
             logger.error('Force quality failed! Falling back');
-            GM.notification(
-              '[Make Bilibili Great Then Ever Before] 已为您自动切换至播放器上选择的清晰度.',
-              '最高清晰度可能不可用'
-            );
+            if (typeof GM !== 'undefined' && typeof GM?.notification === 'function') {
+              GM.notification(
+                '[MBGT] 已为您自动切换至播放器上选择的清晰度.',
+                '最高清晰度可能不可用'
+              );
+            }
           }
 
           // If we have old url, we fetch old quality again
           if (urlMap.has(resp.url)) {
             const oldUrl = urlMap.get(resp.url)!;
-            logger.warn('');
+            logger.warn('Retrying with original live stream URL', { url: oldUrl });
             return $fetch(oldUrl, fetchArgs[1]);
           }
         }

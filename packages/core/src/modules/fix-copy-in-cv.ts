@@ -21,11 +21,20 @@ export default function fixCopyInCV(_logger: Logger): ModuleMeta {
         defineReadonlyProperty(unsafeWindow.original, 'reprint', '1');
       }
 
-      const holder = document.querySelector('.article-holder');
-      if (holder) {
+      // 兼容经典专栏 .article-holder 与新版 opus/article 容器
+      const holders = document.querySelectorAll('.article-holder, .opus-module-content, .article-content');
+      holders.forEach(holder => {
         holder.classList.remove('unable-reprint');
-        holder.addEventListener('copy', e => e.stopImmediatePropagation(), { capture: true });
-      }
+      });
+
+      // 阻止复制劫持并清理版权后缀
+      document.addEventListener('copy', (e) => {
+        const selection = unsafeWindow.getSelection()?.toString();
+        if (selection && selection.length > 0 && e.clipboardData) {
+          e.clipboardData.setData('text/plain', selection);
+          e.stopImmediatePropagation();
+        }
+      }, { capture: true });
     }
   };
 }

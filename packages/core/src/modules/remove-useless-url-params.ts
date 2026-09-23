@@ -4,15 +4,13 @@ import type { Logger } from '../logger';
 
 const uselessUrlParams = [
   'buvid',
-  'is_story_h5',
   'launch_id',
-  'live_from',
-  'mid',
   'session_id',
-  'timestamp',
-  'up_id',
   'vd_source',
   'trackid',
+  'from_source',
+  'from_spmid',
+  'bili_seed',
   /^share/,
   /^spm/
 ];
@@ -26,7 +24,7 @@ export default function removeUselessUrlParams(logger: Logger): ModuleMeta {
       { extension: 'avemujica', feature: 'cleanUrlArgument' }
     ],
     any() {
-      unsafeWindow.history.replaceState(undefined, '', removeTracking(location.href));
+      unsafeWindow.history.replaceState(undefined, '', removeTracking(unsafeWindow.location.href));
 
       const pushState = unsafeWindow.history.pushState;
       unsafeWindow.history.pushState = function (state, unused, url) {

@@ -13,7 +13,6 @@
     "vitest": "^5.0.1"
   },
   "dependencies": {
-    "fake-indexeddb": "^6.2.5",
     "flru": "^1.0.2",
     "foxts": "^5.9.1",
     "preact": "^10.29.8"

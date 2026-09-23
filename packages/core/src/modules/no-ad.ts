@@ -3,21 +3,6 @@ import type { ModuleMeta } from '../types';
 import type { Logger } from '../logger';
 import { tagged as css } from 'foxts/tagged';
 
-declare global {
-  interface Window {
-    __INITIAL_STATE__?: {
-      elecFullInfo: {
-        list?: unknown[]
-      },
-      adData: Record<string, Array<{ name: string, pic: string, url: string }>>
-    }
-  }
-}
-
-// 上游模块文件自带 `declare const unsafeWindow: typeof globalThis & Window;`，
-// core 内统一由 src/globals.d.ts 声明，此处不再重复
-
-// 上游本模块未使用 logger；参数保留以维持统一的工厂签名 function(_logger: Logger): ModuleMeta
 export default function noAd(_logger: Logger): ModuleMeta {
   return {
     name: 'no-ad',
@@ -27,26 +12,7 @@ export default function noAd(_logger: Logger): ModuleMeta {
       { extension: 'avemujica', feature: 'blockAds / 首页重构' }
     ],
     any({ addStyle }) {
-      // 去广告
-
-      /**
-       * 下面是叔叔家的垃圾前端在 computed 里写副作用检测 AdBlock 是否启用：
-
-      u = () => {
-        var A;
-        if (!h.value)
-          return !1;
-        const _ = "cm."
-          , v = "bilibili.com"
-          , f = ((A = h.value) == null ? void 0 : A.querySelectorAll(`a[href*="${_}${v}"]`)) || [];
-        for (let y = 0; y < f.length; y++)
-          if (window.getComputedStyle(f[y]).display == "none")
-            return !0;
-        return !1
-
-        我们只要 display 不是 none 就行了
-      }
-       */
+      // 现代 CSS 广告与打点元素隐藏（微小尺寸防检测）
       addStyle(css`
         .adblock-tips,
         .feed-card:has(.bili-video-card>div:empty),
@@ -66,25 +32,6 @@ export default function noAd(_logger: Logger): ModuleMeta {
           border-width: 0 !important;
         }
       `);
-
-      const adData = unsafeWindow.__INITIAL_STATE__?.adData;
-      if (adData) {
-        const keys = Object.keys(adData);
-        for (let i = 0, len = keys.length; i < len; i++) {
-          const key = keys[i];
-          const items = adData[key];
-          if (!Array.isArray(items)) continue;
-          for (let j = 0, itemLen = items.length; j < itemLen; j++) {
-            const item = items[j];
-            item.name = 'B 站未来有可能会倒闭，但绝不会变质';
-            item.pic = 'https://static.hdslb.com/images/transparent.gif';
-            item.url = 'https://space.bilibili.com/208259';
-          }
-        }
-      }
-      if (unsafeWindow.__INITIAL_STATE__?.elecFullInfo) {
-        unsafeWindow.__INITIAL_STATE__.elecFullInfo.list = [];
-      }
     }
   };
 }

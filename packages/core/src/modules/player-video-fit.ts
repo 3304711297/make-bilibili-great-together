@@ -14,11 +14,21 @@ export default function playerVideoFit(_logger: Logger): ModuleMeta {
     onVideo({ addStyle }) {
       addStyle(css`body[video-fit] #bilibili-player video { object-fit: cover; } .bpx-player-ctrl-setting-fit-mode { display: flex;width: 100%;height: 32px;line-height: 32px; } .bpx-player-ctrl-setting-box .bui-panel-wrap, .bpx-player-ctrl-setting-box .bui-panel-item { min-height: 172px !important; }`);
       let timer: number;
+      let attempts = 0;
+      const MAX_ATTEMPTS = 30; // 轮询上限（6秒），防止无播放器页面无限轮询泄漏
       function injectButton() {
+        attempts++;
+        if (attempts > MAX_ATTEMPTS) {
+          self.clearInterval(timer);
+          return;
+        }
         if (!document.querySelector('.bpx-player-ctrl-setting-menu-left')) {
           return;
         }
         self.clearInterval(timer);
+        if (document.querySelector('.bpx-player-ctrl-setting-fit-mode')) {
+          return;
+        }
         const parent = document.querySelector('.bpx-player-ctrl-setting-menu-left');
         const item = document.createElement('div');
         item.className = 'bpx-player-ctrl-setting-fit-mode bui bui-switch';
