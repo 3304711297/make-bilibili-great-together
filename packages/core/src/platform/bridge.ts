@@ -98,18 +98,36 @@ export function createBridgedKVStore(eventTarget: EventTarget, timeoutMs = 3_000
   };
 }
 
-/** MAIN 侧探测通道：经桥接发 probe 请求到 isolated 世界（其裸 fetch 未被 hook） */
+/** MAIN 侧探测通道：经桥接发 probe 请求到 isolated 世界（其裸 fetch 未被 hook）。
+ * destroy 取消（backlog #1）：外部 signal abort → 提前以 {ok:false} 结算并丢弃 pending，
+ * 迟到的真实回执在共享监听器处因查无 id 被丢弃（与 GM 适配层语义对齐）。 */
 export function createBridgedProbeFetch(eventTarget: EventTarget, budgetMs = 6_000): ProbeFetch {
   ensureResponseListener(eventTarget);
-  return (url, timeoutMs) => new Promise(resolve => {
+  return (url, timeoutMs, signal) => new Promise(resolve => {
+    const started = Date.now();
     const id = `${Date.now()}-${Math.random()}`;
+    let settled = false;
+    const done = (value: { ok: boolean; ms: number }) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
     const timer = setTimeout(() => {
       probePending.delete(id);
-      resolve({ ok: false, ms: budgetMs });
+      done({ ok: false, ms: budgetMs });
     }, budgetMs);
+    if (signal?.aborted) {
+      probePending.delete(id);
+      done({ ok: false, ms: Date.now() - started });
+    } else {
+      signal?.addEventListener('abort', () => {
+        probePending.delete(id);
+        done({ ok: false, ms: Date.now() - started });
+      }, { once: true });
+    }
     probePending.set(id, (res) => {
-      clearTimeout(timer);
-      resolve((res.value as { ok: boolean; ms: number }) ?? { ok: false, ms: budgetMs });
+      done((res.value as { ok: boolean; ms: number }) ?? { ok: false, ms: budgetMs });
     });
     eventTarget.dispatchEvent(new CustomEvent(BRIDGE_REQUEST_EVENT, { detail: { id, action: 'probe', key: url, value: timeoutMs } }));
   });
