@@ -58,7 +58,6 @@ export const STATS_LABELS: Record<string, string> = {
   'beacon': 'sendBeacon 跟踪上报',
   'spyware-fetch': '上报 fetch 拦截',
   'spyware-xhr': '上报 XHR 拦截',
-  'storage-defused': 'localStorage 挡写',
   'p2p-replaced': 'P2P/PCDN 替换',
   'rtc-mocked': 'WebRTC mock',
   'av1-blocked': 'AV1 拦截',
