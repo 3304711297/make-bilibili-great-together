@@ -59,7 +59,7 @@ void (async () => {
   }
   const allModules = getDefaultModules(logger, { cdnHooksRef });
 
-  // 全部 15 个模块的菜单都要注册且只注册一次（禁用态也能在菜单里切回来）
+  // 全部 12 个模块的菜单都要注册且只注册一次（禁用态也能在菜单里切回来）
   for (const mod of allModules) {
     initModuleMenu(mod);
   }
