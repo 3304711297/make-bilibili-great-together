@@ -379,7 +379,16 @@ export function createCDNUtil(logger: Logger, hooksRef?: { current?: CdnUtilHook
       }
 
       knownUrls.forEach((url) => {
-        const urlObj = new URL(url);
+        // 未识别模式的 URL 未经过上面的 new URL 解析：非法输入在此抛错会向上传播，
+        // 而 unsafeWindow.__playinfo__ 路径的 saveAndParsePlayerInfo 调用未包 try/catch，
+        // 会导致整个 no-p2p 模块初始化中断（后续 hook 注册全部丢失）。跳过即可。
+        let urlObj: URL;
+        try {
+          urlObj = new URL(url);
+        } catch {
+          logger.debug('Skipping unparseable CDN URL for key registration.', { url });
+          return;
+        }
         const key = urlObj.pathname + urlObj.search;
 
         cdnDatas.set(key, {
