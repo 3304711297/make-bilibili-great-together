@@ -10,11 +10,11 @@
   },
   "devDependencies": {
     "happy-dom": "^20.14.0",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "flru": "^1.0.2",
     "foxts": "^5.9.1",
-    "preact": "^10.29.8"
+    "preact": "^11.0.0"
   }
 }
