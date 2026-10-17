@@ -17,7 +17,7 @@
     "@rollup/plugin-typescript": "^12.3.0",
     "adm-zip": "^0.6.1",
     "preact": "11.0.1",
-    "rollup": "^4.64.0",
+    "rollup": "^4.64.6",
     "typescript": "^5.5.0"
   }
 }
