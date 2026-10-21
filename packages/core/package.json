@@ -9,7 +9,7 @@
     "lint": "eslint src tests"
   },
   "devDependencies": {
-    "happy-dom": "^21.0.1",
+    "happy-dom": "^21.0.3",
     "vitest": "^5.0.3"
   },
   "dependencies": {
