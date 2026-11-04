@@ -28,7 +28,7 @@
 | **反 PCDN / P2P** | 原生 WebRTC 拦截 + 主世界 Hook | 主世界 Hook 假实现 |
 | **CDN 智能选优** | Isolated 世界与 Background Service Worker 高速测速 | `GM_xmlhttpRequest` 测速 |
 | **配置面板** | 浏览器工具栏图标直接呼出 Options 设置页 | 页面右下角 `⚙ MBGT` 悬浮胶囊面板 |
-| **安装方式** | 解压后加载到扩展管理页（`chrome://extensions`） | 脚本猫 (ScriptCat) / Tampermonkey 一键安装 |
+| **安装方式** | 解压后加载到扩展管理页（`chrome://extensions`），或从源码构建后加载 `packages/extension/dist/` | 脚本猫 (ScriptCat) / Tampermonkey 一键安装，或从源码构建后安装 `packages/userscript/dist/*.user.js` |
 
 ---
 
@@ -42,6 +42,32 @@
 
 ### 方案 B：安装 Userscript 油猴脚本
 - 直接点击 [GitHub Releases 页面](https://github.com/3304711297/make-bilibili-great-together/releases) 中的 `make-bilibili-great-together.user.js` 即可唤起脚本猫或 Tampermonkey 安装。
+
+### 方案 C：从源码构建安装（开发者 / 离线环境）
+
+1. 克隆仓库（或下载源码 ZIP 解压到本地）：
+
+   ```bash
+   git clone https://github.com/3304711297/make-bilibili-great-together.git
+   cd make-bilibili-great-together
+   ```
+
+2. 在仓库根目录安装依赖并构建：
+
+   ```bash
+   pnpm install
+   pnpm build
+   ```
+
+   本机没有全局 pnpm 时，可改用 `npx pnpm@9.15.9 install` 与 `npx pnpm@9.15.9 build`（根 `package.json` 的 `packageManager` 字段即 `pnpm@9.15.9`）。推荐使用 Node.js 24。
+
+3. **为什么必须构建**：`.gitignore` 已忽略 `dist/`、`*.user.js`、`*.zip`，仓库不提交任何构建产物，因此 clone 下来的源码中没有任何可直接安装的文件，必须先在本地构建生成。
+
+4. **扩展形态**：`pnpm build` 后打开扩展管理页（Edge: `edge://extensions`，Chrome: `chrome://extensions`）→ 开启 **「开发者模式」** → 点击 **「加载已解压的扩展程序」** → 选择 `packages/extension/dist/` 目录（该目录含 `manifest.json` / `rules.json` / `options.html` / `main.js` / `isolated.js` / `options.js` / `background.js`）。等价的单文件产物是 `packages/extension/make-bilibili-great-together-extension.zip`。
+
+5. **Userscript 形态**：把 `packages/userscript/dist/make-bilibili-great-together.user.js` 直接拖入脚本猫 (ScriptCat) 或 Tampermonkey 完成安装。
+
+6. ⚠️ **提醒**：源码方案同样遵守「Userscript 与 MV3 扩展二选一」的约束；自行构建的产物跟随 main 分支滚动代码，稳定性低于 Releases 稳定资产，日常使用仍推荐方案 A。
 
 ---
 
@@ -145,7 +171,7 @@ make-bilibili-great-together/
 └── eslint.config.js
 ```
 
-- 当前版本 **0.4.0**，最低浏览器要求 **Chromium 111+**（见 `manifest.json` 的 `minimum_chrome_version`）。
+- 当前版本 **0.4.1**，最低浏览器要求 **Chromium 111+**（见 `manifest.json` 的 `minimum_chrome_version`）。
 
 ---
 
