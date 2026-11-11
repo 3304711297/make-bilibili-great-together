@@ -47,8 +47,8 @@ importers:
         specifier: ^5.9.1
         version: 5.9.1
       preact:
-        specifier: ^11.0.1
-        version: 11.0.1
+        specifier: ^11.2.0
+        version: 11.2.0
     devDependencies:
       happy-dom:
         specifier: ^21.0.4
@@ -76,8 +76,8 @@ importers:
         specifier: ^0.6.1
         version: 0.6.1
       preact:
-        specifier: 11.0.1
-        version: 11.0.1
+        specifier: 11.2.0
+        version: 11.2.0
       rollup:
         specifier: ^4.68.0
         version: 4.68.2
@@ -960,8 +960,8 @@ packages:
     resolution: {integrity: sha512-LJlKCCAUFKOuZxipUdYw1NzIITEsPcgyOG9LkvRJvuKj/bRzbuRY0ARXvL0pWGpsZvn8jku+LMep2eU0seHp8g==}
     engines: {node: ^10 || ^12 || >=14}
 
-  preact@11.0.1:
-    resolution: {integrity: sha512-TNNwEq++jYNHy747LziCjPRVgEwnLSOIOAw/oYcjI3Tdnubx2EXtt76I0an8PATvUWtx/DX1kFIg1eFN+O/fkw==}
+  preact@11.2.0:
+    resolution: {integrity: sha512-/HfHI/7N84e6GrWBJ3J280z3mLaRJiDcSvj/A+y/4AbLnND/1UlGHe1sR6oYuTGwId0nP7dqDU9OnLxMPZ7xBg==}
     peerDependencies:
       preact-render-to-string: '>=6.7.0'
     peerDependenciesMeta:
@@ -1930,7 +1930,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.2
 
-  preact@11.0.1: {}
+  preact@11.2.0: {}
 
   prelude-ls@1.2.1: {}
 
