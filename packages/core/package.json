@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "flru": "^1.0.2",
-    "foxts": "^5.9.1",
+    "foxts": "^5.9.2",
     "preact": "^11.2.0"
   }
 }

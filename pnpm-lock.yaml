@@ -44,8 +44,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       foxts:
-        specifier: ^5.9.1
-        version: 5.9.1
+        specifier: ^5.9.2
+        version: 5.9.2
       preact:
         specifier: ^11.2.0
         version: 11.2.0
@@ -831,8 +831,8 @@ packages:
     resolution: {integrity: sha512-dUnV6Uok578HuGYTC/EM0LqeXewXBCHsh/kmLkdcqN1zgSy7K3gCIrshPBS5JwW20XSaRv4Vnz7z8lMjOV8jWw==}
     engines: {node: '>=18.0.0'}
 
-  foxts@5.9.1:
-    resolution: {integrity: sha512-NrIHGlf4LZGTjjGlVi3gmMbtvC4871SFUflu9yb8X91FYppAk+WMiYS6ZlaEgkPqAkgIGNeq+Y5YCL80GL6v8g==}
+  foxts@5.9.2:
+    resolution: {integrity: sha512-f8U+YM046CwNmmpOm1KxtiD6cOviSxPXFR4r2HatyelIjbPoLktcSi9ty1caH63jvoC6NGdF7SUvribD5Qf8CQ==}
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -1818,7 +1818,7 @@ snapshots:
 
   fnv1a52@1.0.0: {}
 
-  foxts@5.9.1:
+  foxts@5.9.2:
     dependencies:
       fast-fnv1a: 1.0.0
       fnv1a52: 1.0.0
